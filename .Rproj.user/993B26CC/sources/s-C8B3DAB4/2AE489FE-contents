@@ -1,0 +1,57 @@
+## approximate the sum starting from 11 with an integral
+approx.count <- function(t, mu, lambda, delta, n, t.ss){
+  integrand <- function(t, mu, lambda, delta, n){
+    mu*lambda*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.ss-t))*(density.a.b.exact(lambda, delta, t.ss-t, 1, n) - 
+                                                                           density.a.b.exact(lambda, delta, t.ss-t, 1, 11))
+    
+  }
+  res <- integrate(integrand, lower=0, upper=t.ss, mu=mu, lambda=lambda, delta=delta, n=100*N)$value
+  res
+}
+
+
+
+integrand <- function(t, mu, lambda, delta, n){
+  if(is.infinite(n)){
+    return(mu*lambda*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.ss-t))*( - 
+                                                                                   density.a.b.exact(lambda, delta, t.ss-t, 1, 1)))
+  }
+  mu*lambda*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.ss-t))*(density.a.b.exact(lambda, delta, t.ss-t, 1, n) - 
+                                                                         density.a.b.exact(lambda, delta, t.ss-t, 1, 1))
+  
+}
+
+## total number of mutations acquired during exponential growth that survived:
+total <- integrate(integrand, lower=0, upper=t.ss, mu=mu, lambda=lambda, delta=delta, n=Inf)$value
+res <- total - integrate(integrand, lower=0, upper=t.ss, mu=mu, lambda=lambda, delta=delta, n=n.min)$value
+return(res)
+}
+
+})
+return(res)
+
+
+
+approx.count <- function(t, mu, lambda, delta, n.min, n.max, t.ss){
+  
+  integrand <- function(t, mu, lambda, delta, n){
+    if(is.infinite(n)){
+      return(mu*lambda*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.ss-t))*( - 
+                                                                                     density.a.b.exact(lambda, delta, t.ss-t, 1, 1)))
+    }else{
+      mu*lambda*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.ss-t))*(density.a.b.exact(lambda, delta, t.ss-t, 1, n) - 
+                                                                             density.a.b.exact(lambda, delta, t.ss-t, 1, 11))
+    }
+  }
+  
+  res <- integrate(integrand, lower=0, upper=t.ss, mu=mu, lambda=lambda, delta=delta, n=n.max)$value
+  res
+}
+
+## Part I
+
+approx.count(t, mu, lambda, delta, 11, 100*N, t.ss)
+
+## Part II
+
+approx.count(t, mu, lambda, delta, 1, Inf, t.ss) - approx.count(t, mu, lambda, delta, 1, n.min, t.ss)

@@ -1,0 +1,24 @@
+{
+    "id": "2FB5ABBE",
+    "path": "~/Nextcloud/Hematopoiesis/Blood_oxford/RScripts/Drift_and_selection/R/Extract_info_from_vcf.R",
+    "project_path": "R/Extract_info_from_vcf.R",
+    "type": "r_source",
+    "hash": "1728273960",
+    "contents": "",
+    "dirty": false,
+    "created": 1664375683860.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "cursorPosition": "18,21",
+        "scrollLine": "0"
+    },
+    "folds": "19|29|32|6|\n33|28|43|6|\n44|24|56|6|\n57|22|68|6|\n69|28|82|6|\n83|30|89|6|\n90|23|96|6|\n97|30|107|6|\n108|32|118|6|\n119|23|125|6|\n126|35|132|6|\n133|34|139|6|\n",
+    "lastKnownWriteTime": 1664375788,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1664375788740,
+    "read_only": false,
+    "read_only_alternatives": []
+}

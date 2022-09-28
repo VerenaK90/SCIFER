@@ -1,0 +1,5 @@
+Package: Drift_and_selection
+Type: Package
+Title: Package to compute neutral mutation accumulation during drift and selection
+Version: 0.0.0.1
+RoxygenNote: 7.1.1

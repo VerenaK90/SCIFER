@@ -1,5 +1,13 @@
 Package: Drift_and_selection
-Type: Package
 Title: Package to compute neutral mutation accumulation during drift and selection
-Version: 0.0.0.1
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Verena",
+           family = "Körber",
+           role = c("aut", "cre"),
+           email = "ve.koerber@web.de",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Package to compute neutral mutation accumulation during drift and selection.
+License: `use_mit_license()`
+Encoding: UTF-8
 RoxygenNote: 7.1.1

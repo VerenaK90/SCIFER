@@ -610,7 +610,7 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   
   mutations.from.selected.clone <- mutations.noncritical.bd(lambda.ss, lambda.ss*s, t.end-t.s, mu, b, N=N)
   
-  mutations.from.founder.clone <- mutations.noncritical.bd(lambda.ss, delta.founder, t.end - t.s, mu, b, N0=N)
+  mutations.from.founder.clone <- mutations.noncritical.bd(lambda.ss, delta.founder, t.end - t.s, mu, b, N0=N, N=(1-f.sel)*N)
   ## truncate at b= f.sel*N
   mutations.from.selected.clone[b>f.sel*N] <- 0
   mutations.at.t.end <- mutations.at.t.end + mutations.from.selected.clone + mutations.from.founder.clone
@@ -899,7 +899,7 @@ mutational.burden.with.nested.selection <- function(mu, N, lambda.exp, delta.exp
 
   mutations.from.second.selected.clone <- mutations.noncritical.bd(lambda.ss, lambda.ss*s1*s2, t.end-t.s2, mu, b, N=N)
   
-  mutations.from.founder.clone <- mutations.noncritical.bd(lambda.ss, delta.founder, t.end - t.s, mu, b, N0=N)
+  mutations.from.founder.clone <- mutations.noncritical.bd(lambda.ss, delta.founder, t.end - t.s, mu, b, N0=N, N=(1-f.sel)*N)
   
   mutations.at.t.end <- mutations.at.t.end + mutations.at.t.end.within.selected.clone + mutations.from.first.selected.clone + mutations.from.second.selected.clone +
     mutations.from.founder.clone

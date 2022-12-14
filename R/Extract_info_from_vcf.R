@@ -16,15 +16,24 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
   }
   
   if(mutationcaller=="Strelka"){
+    
+    ref.column <- which(colnames(vcf$vcf)=="REF")
+    alt.column <-  which(colnames(vcf$vcf)=="ALT")
+    normal.column <- which(colnames(vcf$vcf)=="NORMAL")
+    tumor.column <- which(colnames(vcf$vcf)=="TUMOR")
+    if("FORMAT" %in% colnames(vcf$vcf)){
+      SUBDP <- which(strsplit(vcf$vcf$FORMAT[1], split=":")[[1]]=="SUBDP")
+    }
+    
     if(type=="snvs"){
       if(info=="readcounts"){
         readcounts <- t(apply(vcf$vcf, 1, function(x){
           
-          ref <- which(c("A", "C", "G", "T")==as.character(x[4]))
-          alt <- which(c("A", "C", "G", "T")==as.character(x[5]))
+          ref <- which(c("A", "C", "G", "T")==as.character(x[ref.column]))
+          alt <- which(c("A", "C", "G", "T")==as.character(x[alt.column]))
           x <- strsplit(as.character(x[11]), split=":")[[1]]
-          ref <- strsplit(x[5+ref], split=",")[[1]][1]
-          alt <- strsplit(x[5+alt], split=",")[[1]][1]
+          ref <- strsplit(x[SUBDP+ref], split=",")[[1]][1]
+          alt <- strsplit(x[SUBDP+alt], split=",")[[1]][1]
           return(c(as.numeric(ref),as.numeric(alt)))
         }))
         colnames(readcounts) <- c("REF", "ALT")
@@ -34,9 +43,9 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       if(info=="varCounts"){
         alt <- t(apply(vcf$vcf, 1, function(x){
           
-          alt <- which(c("A", "C", "G", "T")==as.character(x[5]))
+          alt <- which(c("A", "C", "G", "T")==as.character(x[alt.column]))
           x <- strsplit(as.character(x[11]), split=":")[[1]]
-          alt <- strsplit(x[5+alt], split=",")[[1]][1]
+          alt <- strsplit(x[SUBDP+alt], split=",")[[1]][1]
           return(as.numeric(alt))
         }))
 
@@ -45,11 +54,11 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       if(info=="depth"){
         depth <- apply(vcf$vcf, 1, function(x){
           
-          ref <- which(c("A", "C", "G", "T")==as.character(x[4]))
-          alt <- which(c("A", "C", "G", "T")==as.character(x[5]))
-          x <- strsplit(as.character(x[11]), split=":")[[1]]
-          ref <- strsplit(x[5+ref], split=",")[[1]][1]
-          alt <- strsplit(x[5+alt], split=",")[[1]][1]
+          ref <- which(c("A", "C", "G", "T")==as.character(x[ref.column]))
+          alt <- which(c("A", "C", "G", "T")==as.character(x[alt.column]))
+          x <- strsplit(as.character(x[tumor.column]), split=":")[[1]]
+          ref <- strsplit(x[SUBDP+ref], split=",")[[1]][1]
+          alt <- strsplit(x[SUBDP+alt], split=",")[[1]][1]
           return(as.numeric(ref) +as.numeric(alt))
         })
         
@@ -58,11 +67,11 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       if(info=="VAF"){
         vaf <- apply(vcf$vcf, 1, function(x){
           
-          ref <- which(c("A", "C", "G", "T")==as.character(x[4]))
-          alt <- which(c("A", "C", "G", "T")==as.character(x[5]))
-          x <- strsplit(as.character(x[11]), split=":")[[1]]
-          ref <- strsplit(x[5+ref], split=",")[[1]][1]
-          alt <- strsplit(x[5+alt], split=",")[[1]][1]
+          ref <- which(c("A", "C", "G", "T")==as.character(x[ref.column]))
+          alt <- which(c("A", "C", "G", "T")==as.character(x[alt.column]))
+          x <- strsplit(as.character(x[tumor.column]), split=":")[[1]]
+          ref <- strsplit(x[SUBDP+ref], split=",")[[1]][1]
+          alt <- strsplit(x[SUBDP+alt], split=",")[[1]][1]
           return(as.numeric(alt)/(as.numeric(ref) +as.numeric(alt)))
         })
         return(vaf)
@@ -97,44 +106,47 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       }
       if(info=="VAF.control"){
         VAF.control <- apply(vcf$vcf, 1, function(x){
-          ref <- which(c("A", "C", "G", "T")==as.character(x[4]))
-          alt <- which(c("A", "C", "G", "T")==as.character(x[5]))
-          x <- strsplit(as.character(x[10]), split=":")[[1]]
-          ref <- strsplit(x[5+ref], split=",")[[1]][1]
-          alt <- strsplit(x[5+alt], split=",")[[1]][1]
+          ref <- which(c("A", "C", "G", "T")==as.character(x[ref.column]))
+          alt <- which(c("A", "C", "G", "T")==as.character(x[alt.column]))
+          x <- strsplit(as.character(x[normal.column]), split=":")[[1]]
+          ref <- strsplit(x[SUBDP+ref], split=",")[[1]][1]
+          alt <- strsplit(x[SUBDP+alt], split=",")[[1]][1]
           return(as.numeric(alt)/(as.numeric(alt) + as.numeric(ref)))
         })
         return(VAF.control)
       }
       if(info=="depth.control"){
         depth.control <- apply(vcf$vcf, 1, function(x){
-          ref <- which(c("A", "C", "G", "T")==as.character(x[4]))
-          alt <- which(c("A", "C", "G", "T")==as.character(x[5]))
-          x <- strsplit(as.character(x[10]), split=":")[[1]]
-          ref <- strsplit(x[5+ref], split=",")[[1]][1]
-          alt <- strsplit(x[5+alt], split=",")[[1]][1]
+          ref <- which(c("A", "C", "G", "T")==as.character(x[ref.column]))
+          alt <- which(c("A", "C", "G", "T")==as.character(x[alt.column]))
+          x <- strsplit(as.character(x[normal.column]), split=":")[[1]]
+          ref <- strsplit(x[SUBDP+ref], split=",")[[1]][1]
+          alt <- strsplit(x[SUBDP+alt], split=",")[[1]][1]
           return(as.numeric(alt) + as.numeric(ref))
         })
         return(depth.control)
       }
       if(info=="Gene"){
         gene <- sapply(vcf$vcf$INFO, function(x){
-          x <- strsplit(x, split=";")[[1]][16]
-          strsplit(x, split="=")[[1]][2]
+          x <- strsplit(x, split="Gene.refGene=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+          x
         })
         return(unname(gene))
       }
       if(info=="annovar_function"){
         annovar_function <- sapply(vcf$vcf$INFO, function(x){
-          x <- strsplit(x, split=";")[[1]][15]
-          strsplit(x, split="=")[[1]][2]
+          x <- strsplit(x, split="Func.refGene=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+          x
         })
         return(unname(annovar_function))
       }
       if(info=="exonic_function"){
         exonic_function <- sapply(vcf$vcf$INFO, function(x){
-          x <- strsplit(x, split=";")[[1]][18]
-          strsplit(x, split="=")[[1]][2]
+          x <- strsplit(x, split="ExonicFunc.refGene=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+          x
         })
         return(unname(exonic_function))
       }
@@ -142,8 +154,8 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       
       if(info=="readcounts"){
         readcounts <- t(sapply(vcf$vcf$TUMOR, function(x){
-          ref <- strsplit(x, split=":")[[1]][4]
-          alt <- strsplit(x, split=":")[[1]][5]
+          ref <- strsplit(x, split=":")[[1]][ref.column]
+          alt <- strsplit(x, split=":")[[1]][alt.column]
           ref <- strsplit(ref, split=",")[[1]][1]
           alt <- strsplit(alt, split=",")[[1]][1]
           alt <- unname(alt)
@@ -155,8 +167,8 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       }
       if(info=="varCounts"){
         varCounts <- sapply(vcf$vcf$TUMOR, function(x){
-          ref <- strsplit(x, split=":")[[1]][4]
-          alt <- strsplit(x, split=":")[[1]][5]
+          ref <- strsplit(x, split=":")[[1]][ref.column]
+          alt <- strsplit(x, split=":")[[1]][alt.column]
           ref <- strsplit(ref, split=",")[[1]][1]
           alt <- strsplit(alt, split=",")[[1]][1]
           alt <- unname(alt)
@@ -167,8 +179,8 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       }
       if(info=="depth"){
         depth <- sapply(vcf$vcf$TUMOR, function(x){
-          ref <- strsplit(x, split=":")[[1]][4]
-          alt <- strsplit(x, split=":")[[1]][5]
+          ref <- strsplit(x, split=":")[[1]][ref.column]
+          alt <- strsplit(x, split=":")[[1]][alt.column]
           ref <- strsplit(ref, split=",")[[1]][1]
           alt <- strsplit(alt, split=",")[[1]][1]
           return(as.numeric(ref)+as.numeric(alt))
@@ -177,8 +189,8 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       }
       if(info=="VAF"){
         vaf <- sapply(vcf$vcf$TUMOR, function(x){
-          ref <- strsplit(x, split=":")[[1]][4]
-          alt <- strsplit(x, split=":")[[1]][5]
+          ref <- strsplit(x, split=":")[[1]][ref.column]
+          alt <- strsplit(x, split=":")[[1]][alt.column]
           ref <- strsplit(ref, split=",")[[1]][1]
           alt <- strsplit(alt, split=",")[[1]][1]
           return(as.numeric(alt)/(as.numeric(ref)+as.numeric(alt)))
@@ -216,8 +228,8 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       }
       if(info=="VAF.control"){
         VAF.control <- sapply(vcf$vcf$NORMAL, function(x){
-          ref <- strsplit(x, split=":")[[1]][4]
-          alt <- strsplit(x, split=":")[[1]][5]
+          ref <- strsplit(x, split=":")[[1]][ref.column]
+          alt <- strsplit(x, split=":")[[1]][alt.column]
           ref <- strsplit(ref, split=",")[[1]][1]
           alt <- strsplit(alt, split=",")[[1]][1]
           return(as.numeric(alt)/(as.numeric(alt) + as.numeric(ref)))
@@ -233,20 +245,17 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       }
       if(info=="annovar_function"){
         annovar_function <-  sapply(vcf$vcf$INFO, function(x){
-          x <- strsplit(x, split=";")[[1]][16]
-          strsplit(x, split="=")[[1]][2]
+          x <- strsplit(x, split="Func.refGene=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+          x
         })
         return(unname(annovar_function))
       }
       if(info=="exonic_function"){
         exonic_function <- sapply(vcf$vcf$INFO, function(x){
-          x <- strsplit(x, split=";")[[1]]
-          if(length(x)==22){
-            x <- x[20]
-          }else{
-            x <- x[19]
-          }
-          strsplit(x, split="=")[[1]][2]
+            x <- strsplit(x, split="ExonicFunc.refGene=")[[1]][2]
+            x <- strsplit(x, split=";")[[1]][1]
+            x
         })
         return(unname(exonic_function))
       }
@@ -316,6 +325,74 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       }
       
     
+  }else if(mutationcaller=="mpileup"){
+    if(type=="snvs"){
+      if(info=="readcounts"){
+        readcounts <- t(sapply(vcf$vcf$INFO, function(x){
+          x <- strsplit(x, split="DP4=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+          x <- as.numeric(strsplit(x, split=",")[[1]])
+          x <- unname(x)
+          c(sum(x[c(1,2)]), sum(x[c(3,4)]))
+        }))
+        rownames(readcounts) <- paste(vcf$vcf$GENE, vcf$vcf$POS, sep=".")
+        colnames(readcounts) <- c("REF", "ALT")
+        
+        return(readcounts)
+      }
+      if(info=="depth"){
+        depth <- sapply(vcf$vcf$INFO, function(x){
+          x <- strsplit(x, split="DP4=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+          x <- as.numeric(strsplit(x, split=",")[[1]])
+          x <- unname(x)
+          sum(x)
+        })
+        
+        return(depth)
+      }
+      if(info=="VAF"){
+        vaf <- sapply(vcf$vcf$INFO, function(x){
+          x <- strsplit(x, split="DP4=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+          x <- as.numeric(strsplit(x, split=",")[[1]])
+          x <- unname(x)
+          sum(x[c(3,4)])/ sum(x)
+        })
+        vaf <- unname(vaf)
+        return(vaf)
+      }
+      if(info=="Gene"){
+        gene <- sapply(vcf$vcf$INFO, function(x){
+          x <- strsplit(x, split="Gene.refGene=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+        })
+        return(gene)
+      }
+      if(info=="annovar_function"){
+        annovarfunc <- sapply(vcf$vcf$INFO, function(x){
+          x <- strsplit(x, split="Func.refGene=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+        })
+        return(annovarfunc)
+      }
+      if(info=="exonic_function"){
+        exonicfunc <- sapply(vcf$vcf$INFO, function(x){
+          x <- strsplit(x, split="ExonicFunc.refGene=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+        })
+        return(exonicfunc)
+      }
+      if(info=="AA_change"){
+        aa_change <- sapply(vcf$vcf$INFO, function(x){
+          x <- strsplit(x, split="AAChange.refGene=")[[1]][2]
+          x <- strsplit(x, split=";")[[1]][1]
+          x <- strsplit(x, split="p.")[[1]][2]
+          x <- strsplit(x, split=",")[[1]][1]
+        })
+        return(aa_change)
+      }
+    }
   }
   
   

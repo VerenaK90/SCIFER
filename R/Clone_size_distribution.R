@@ -302,15 +302,16 @@ mutations.during.steady.state <- function(lambda, N, mu, n.min, t.end){
 #' @param lambda.ss proliferation and loss rate during homeostasis
 #' @param t.end end point (starting from homeostasis)
 #' @param b minimal clone size of interest. Number or vector. 
+#' @param accuracy.a step size in which mutations accumulated during expansion are evaluated between 5 and 100%; defaults to 5%
 #' @param return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations. Returns the number of mutations present in at least b cells.
 #' @export
 
 
-mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b){
+mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = 0.05){
 
   ## Compute the VAF distribution after expansion in discretized intervals (a). Sample more densely for large as. 
   a <- 10^seq(0, log10(N)-1, 0.05)
-  a <- unique(round(c(a, seq(0.105, 1, 0.05)*N)))
+  a <- unique(round(c(a, seq(0.105, 1, accuracy.a)*N)))
 
   ## compute for each interval the expected number of mutations at Tss, the transition point between expansion and homeostasis
   t.ss <- log(N)/(lambda.exp-delta.exp)
@@ -470,10 +471,11 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
 #' @param t.s time point at which selective advantage is acquired.
 #' @param s selective advantage
 #' @param b minimal clone size of interest. Number or vector. 
+#' @param accuracy.a step size in which mutations accumulated during expansion are evaluated between 5 and 100%; defaults to 5%
 #' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least b cells
 #' @export
 
-mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, s, b){
+mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, s, b, accuracy.a = 0.05){
   
   ## initialize mutation count
   mutations.at.t.end <- 0
@@ -494,7 +496,7 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   ## if 5% is reached after t end, just take the predicted output at t.end according to homeostatic turnover and neglect expansion of the selected clone
   
   if(t.five.percent > (t.end - t.s)){
-    mutations.at.t.end <- mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b)
+    mutations.at.t.end <- mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = accuracy.a)
     return(mutations.at.t.end)
   }
   
@@ -543,10 +545,10 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   }else{
     a <- c(1, 10, 25, 50, 75, 100)
   }
-  a <- sort(unique(round(c(a, seq(0.105, 1, 0.05)*N))))
+  a <- sort(unique(round(c(a, seq(0.105, 1, accuracy.a)*N))))
   
   ## compute the mutational burden at t.s
-  mutations.at.t.s <- mutational.burden(mu=mu, N=N, lambda.exp=lambda.exp, delta.exp=delta.exp, lambda.ss=lambda.ss, t.end=t.s, b=a)
+  mutations.at.t.s <- mutational.burden(mu=mu, N=N, lambda.exp=lambda.exp, delta.exp=delta.exp, lambda.ss=lambda.ss, t.end=t.s, b=a, accuracy.a = accuracy.a)
   ## mutations per bin (cumulative --> discrete)
   mutations.at.t.s <- mutations.at.t.s - c(mutations.at.t.s[-1],0)
   

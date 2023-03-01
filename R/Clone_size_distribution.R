@@ -472,10 +472,11 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
 #' @param s selective advantage
 #' @param b minimal clone size of interest. Number or vector. 
 #' @param accuracy.a step size in which mutations accumulated during expansion are evaluated between 5 and 100%; defaults to 5%
+#' @param min.clone.size the lower detection limit for selected clones
 #' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least b cells
 #' @export
 
-mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, s, b, accuracy.a = 0.05){
+mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, s, b, accuracy.a = 0.05, min.clone.size = 0.05){
   
   ## initialize mutation count
   mutations.at.t.end <- 0
@@ -492,10 +493,10 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   }
   
   ## compute when the selected clone reaches 5% as we cannot resolve smaller subclones
-  t.five.percent <- log(0.05*N)/(lambda.ss - s*lambda.ss)
+  t.min.clone.size <- log(min.clone.size*N)/(lambda.ss - s*lambda.ss)
   ## if 5% is reached after t end, just take the predicted output at t.end according to homeostatic turnover and neglect expansion of the selected clone
   
-  if(t.five.percent > (t.end - t.s)){
+  if(t.min.clone.size > (t.end - t.s)){
     mutations.at.t.end <- mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = accuracy.a)
     return(mutations.at.t.end)
   }
@@ -919,7 +920,7 @@ mutational.burden.with.nested.selection <- function(mu, N, lambda.exp, delta.exp
 #' @param vafs vector of VAF at which cumulative mutation counts were measured
 #' @param expected.mutations expected number of mutations at each VAF
 #' @param depth sequencing depth
-#' @false.negative.per.vaf matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.
+#' @param false.negative.per.vaf matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.
 #' @return A vector of simulated VAFs
 #' @export
 

@@ -19,6 +19,8 @@ simulated.data(
 \item{expected.mutations}{expected number of mutations at each VAF}
 
 \item{depth}{sequencing depth}
+
+\item{false.negative.per.vaf}{matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.}
 }
 \value{
 A vector of simulated VAFs

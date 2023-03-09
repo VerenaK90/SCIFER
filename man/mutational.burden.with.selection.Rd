@@ -13,7 +13,9 @@ mutational.burden.with.selection(
   t.end,
   t.s,
   s,
-  b
+  b,
+  accuracy.a = 0.05,
+  min.clone.size = 0.05
 )
 }
 \arguments{
@@ -34,6 +36,10 @@ mutational.burden.with.selection(
 \item{s}{selective advantage}
 
 \item{b}{minimal clone size of interest. Number or vector.}
+
+\item{accuracy.a}{step size in which mutations accumulated during expansion are evaluated between 5 and 100%; defaults to 5%}
+
+\item{min.clone.size}{the lower detection limit for selected clones}
 }
 \value{
 This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least b cells

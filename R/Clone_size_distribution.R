@@ -915,19 +915,20 @@ mutational.burden.with.nested.selection <- function(mu, N, lambda.exp, delta.exp
 ####### Simulate whole genome sequencing
 #########################################################################################################################################
 
+
 #' Simulate sampling as in WGS by simulating the actual sampling (i.e. it's not the expected value but a sampling instance)
 #' 
-#' @param vafs vector of VAF at which cumulative mutation counts were measured
-#' @param expected.mutations expected number of mutations at each VAF
+#' @param clone.sizes vector of clone sizes at which cumulative mutation counts were measured
+#' @param expected.mutations expected number of mutations at each clone size
 #' @param depth sequencing depth
 #' @param false.negative.per.vaf matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.
 #' @return A vector of simulated VAFs
 #' @export
 
-simulated.data <- function(vafs, expected.mutations, depth=90, sensitivity=T, false.negative.per.vaf, min.vaf=0.05){
-
+.simulated.wgs.data <- function(clone.sizes, expected.mutations, depth=90, sensitivity=T, false.negative.per.vaf, min.vaf=0.05){
+  
   simulated.vafs <- c()
-  sim <- apply(rbind(vafs, expected.mutations), 2, function(x){
+  sim <- apply(rbind(clone.sizes, expected.mutations), 2, function(x){
     if(x[2] < 1){
       x[2][x[2]<0] <- 0
       x[2] <- sample(size = 1, c(0,1), prob = c(1-x[2], x[2]))
@@ -972,9 +973,8 @@ simulated.data <- function(vafs, expected.mutations, depth=90, sensitivity=T, fa
     })
   }
   sim
-
+  
 }
-
 
 #' Compute the expected number of mutations after WGS (note: runs slowly!)
 #' 
@@ -1010,5 +1010,56 @@ ExpectedNumberAfterWGS <- function(M, vafs, depth, false.negative.per.vaf, min.v
   sim.vafs <- sapply( vafs, function(vaf){expected.number.to.measure(M, vafs, depth, vaf)})
   
   sim.vafs
+  
+}
+
+#' Simulate sampling as in single-cell sequencing by simulating the actual sampling of cells (i.e. it's not the expected value but a sampling instance)
+#' 
+#' @param clone.sizes vector of clone sizes at which cumulative mutation counts were measured
+#' @param expected.mutations expected number of mutations at each clone size
+#' @param ncells sequenced cells
+#' @return A vector of simulated VAFs
+#' @export
+
+.simulated.scWGS.data <- function(clone.sizes, expected.mutations, ncells=100, min.vaf=0.05){
+  
+  simulated.vafs <- c()
+  sim <- apply(rbind(clone.sizes, expected.mutations), 2, function(x){
+    if(x[2] < 1){
+      x[2][x[2]<0] <- 0
+      x[2] <- sample(size = 1, c(0,1), prob = c(1-x[2], x[2]))
+    }
+    res <- rbinom(n=round(x[2]), size = ncells, prob = x[1])/(2*ncells) ## transform into VAF
+    res 
+  })
+  sim <- unlist(sim)
+  
+  sim <- sim[sim!=0]
+  
+  sim
+  
+}
+
+#' Wrapper function to simulate sequencing either by bulk WGS or by scWGS
+#' 
+#' @param seqtype string, specifying the sequencing method. Must be either 'bulk' or 'sc'
+#' @param clone.sizes vector of clone sizes at which cumulative mutation counts were measured
+#' @param expected.mutations expected number of mutations at each clone size
+#' @param depth sequencing depth, only specify for bulk WGS
+#' @param false.negative.per.vaf matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.
+#' @param sensitivity logical, if sensitivty of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf
+#' @param min.vaf the minimal VAF to return
+#' @param ncells the number of sequenced cells, only specify if seqtype="sc"
+#' @return A vector of simulated VAFs
+#' @export
+
+simulated.data <- function(seqtype, expected.mutations, depth=90, ncells=100, sensitivity=T, false.negative.per.vaf, min.vaf=0.05){
+  
+  if(seqtype="bulk"){
+    sim <- .simulated.wgs.data(clone.sizes, expected.mutations, depth, sensitivity, false.negative.per.vaf, min.vaf)
+  }else if(seqtype=="sc"){
+    sim <- .simulated.scWGS.data(clone.sizes, expected.mutations, ncells, min.vaf)
+  }
+  sim
   
 }

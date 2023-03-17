@@ -6,6 +6,7 @@
 \usage{
 simulated.data(
   seqtype,
+  clone.sizes,
   expected.mutations,
   depth = 90,
   ncells = 100,
@@ -16,6 +17,8 @@ simulated.data(
 }
 \arguments{
 \item{seqtype}{string, specifying the sequencing method. Must be either 'bulk' or 'sc'}
+
+\item{clone.sizes}{vector of clone sizes at which cumulative mutation counts were measured}
 
 \item{expected.mutations}{expected number of mutations at each clone size}
 
@@ -28,8 +31,6 @@ simulated.data(
 \item{false.negative.per.vaf}{matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.}
 
 \item{min.vaf}{the minimal VAF to return}
-
-\item{clone.sizes}{vector of clone sizes at which cumulative mutation counts were measured}
 }
 \value{
 A vector of simulated VAFs

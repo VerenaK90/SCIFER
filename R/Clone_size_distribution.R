@@ -1053,7 +1053,7 @@ ExpectedNumberAfterWGS <- function(M, vafs, depth, false.negative.per.vaf, min.v
 #' @return A vector of simulated VAFs
 #' @export
 
-simulated.data <- function(seqtype, expected.mutations, depth=90, ncells=100, sensitivity=T, false.negative.per.vaf, min.vaf=0.05){
+simulated.data <- function(seqtype, clone.sizes, expected.mutations, depth=90, ncells=100, sensitivity=T, false.negative.per.vaf, min.vaf=0.05){
   
   if(seqtype=="bulk"){
     sim <- .simulated.wgs.data(clone.sizes, expected.mutations, depth, sensitivity, false.negative.per.vaf, min.vaf)

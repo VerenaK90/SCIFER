@@ -2,29 +2,38 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{simulated.data}
 \alias{simulated.data}
-\title{Simulate sampling as in WGS by simulating the actual sampling (i.e. it's not the expected value but a sampling instance)}
+\title{Wrapper function to simulate sequencing either by bulk WGS or by scWGS}
 \usage{
 simulated.data(
-  vafs,
+  seqtype,
   expected.mutations,
   depth = 90,
+  ncells = 100,
   sensitivity = T,
   false.negative.per.vaf,
   min.vaf = 0.05
 )
 }
 \arguments{
-\item{vafs}{vector of VAF at which cumulative mutation counts were measured}
+\item{seqtype}{string, specifying the sequencing method. Must be either 'bulk' or 'sc'}
 
-\item{expected.mutations}{expected number of mutations at each VAF}
+\item{expected.mutations}{expected number of mutations at each clone size}
 
-\item{depth}{sequencing depth}
+\item{depth}{sequencing depth, only specify for bulk WGS}
+
+\item{ncells}{the number of sequenced cells, only specify if seqtype="sc"}
+
+\item{sensitivity}{logical, if sensitivty of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf}
 
 \item{false.negative.per.vaf}{matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.}
+
+\item{min.vaf}{the minimal VAF to return}
+
+\item{clone.sizes}{vector of clone sizes at which cumulative mutation counts were measured}
 }
 \value{
 A vector of simulated VAFs
 }
 \description{
-Simulate sampling as in WGS by simulating the actual sampling (i.e. it's not the expected value but a sampling instance)
+Wrapper function to simulate sequencing either by bulk WGS or by scWGS
 }

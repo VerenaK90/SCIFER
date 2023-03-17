@@ -1055,7 +1055,7 @@ ExpectedNumberAfterWGS <- function(M, vafs, depth, false.negative.per.vaf, min.v
 
 simulated.data <- function(seqtype, expected.mutations, depth=90, ncells=100, sensitivity=T, false.negative.per.vaf, min.vaf=0.05){
   
-  if(seqtype="bulk"){
+  if(seqtype=="bulk"){
     sim <- .simulated.wgs.data(clone.sizes, expected.mutations, depth, sensitivity, false.negative.per.vaf, min.vaf)
   }else if(seqtype=="sc"){
     sim <- .simulated.scWGS.data(clone.sizes, expected.mutations, ncells, min.vaf)

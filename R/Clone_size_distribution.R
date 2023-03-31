@@ -445,10 +445,10 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
   
   
   mutations.from.selected.clone.after.t.s <- sapply(b, function(n.min){
-    mutations.after.expansion(lambda = lambda, delta = delta *s, t.ss = t.end - t.s, 
+    mutations.noncritical.bd(lambda = lambda, delta = delta *s, t,end = t.end - t.s, 
                                                                        mu = mu, n.min = n.min, N = sel.size)})
   mutations.from.founder.clone.after.t.s <- exp((lambda - delta)*t.s)*sapply(b, function(n.min){
-    mutations.after.expansion(lambda = lambda, delta = delta, t.ss = t.end - t.s, 
+    mutations.noncritical.bd(lambda = lambda, delta = delta, end = t.end - t.s, 
                               mu = mu, n.min = n.min, N = exp((lambda - delta)*(t.end - t.s)), mode="exact")})
   
   

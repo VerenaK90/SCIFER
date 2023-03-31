@@ -26,8 +26,12 @@
 
 density.a.b.exact <- function(lambda, delta, t, a, b){
   if(a==1){
-    (1-.alpha(lambda, delta, t))*(1-.beta(lambda, delta, t))*
-      .beta(lambda, delta, t)^(b-1)
+    if(b==0){
+      .alpha(lambda, delta, t)
+    }else{
+      (1-.alpha(lambda, delta, t))*(1-.beta(lambda, delta, t))*
+        .beta(lambda, delta, t)^(b-1)
+    }
   }else{
     if(b==0){
       .alpha(lambda, delta, t)^a
@@ -416,30 +420,29 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
   mutations.in.selected.clone.prior.t.s <- sapply(b, function(n.min){
     integrand <- function(t, mu, lambda, delta, n){
       p.mut.in.sel <- exp((lambda - delta)*(t.s - t))/exp((lambda - delta)*t.s)
-      p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.end-t))*(density.a.b.exact(lambda, delta, t.end-t, 1, n) - 
-                                                                             density.a.b.exact(lambda, delta, t.end-t, 1, 1))
-      
+      p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*( density.a.b.exact(lambda, delta, t.end-t, 1, 0) +(density.a.b.exact(lambda, delta, t.end-t, 1, N*100) - 
+                                                                                           density.a.b.exact(lambda, delta, t.end-t, 1, n))/log(.beta(lambda, delta, t.end-t)))
     }
     
     ## total number of mutations acquired during exponential growth that survived:
-    total <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=100*N)$value
-    res <- total - integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=max(0,n.min-sel.size))$value
+    res <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=max(1,n.min-sel.size))$value
     return(res)
   })
   
   mutations.not.in.selected.clone.prior.t.s <- sapply(b, function(n.min){
     integrand <- function(t, mu, lambda, delta, n){
       p.mut.in.sel <- exp((lambda - delta)*(t.s - t))/exp((lambda - delta)*t.s)
-      (1-p.mut.in.sel)*mu*lambda*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.end-t))*(density.a.b.exact(lambda, delta, t.end-t, 1, n) - 
-                                                                                           density.a.b.exact(lambda, delta, t.end-t, 1, 1))
+      (1-p.mut.in.sel)*mu*lambda*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.end-t))*(density.a.b.exact(lambda, delta, t.end-t, 1, 100*N) - 
+                                                                                               density.a.b.exact(lambda, delta, t.end-t, 1, n))
       
     }
     
     ## total number of mutations acquired during exponential growth that survived:
-    total <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=100*N)$value
-    res <- total - integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=n.min)$value
+    res <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=n.min)$value
     return(res)
   })
+    
+  
   
   mutations.before.t.s <- mutations.in.selected.clone.prior.t.s + mutations.not.in.selected.clone.prior.t.s
   

@@ -418,16 +418,20 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
   ## Compute the number of mutations that are present in at least 1 cell and at most n.min cells
   ## The sum necessary in order to compute the cumulative distribution, is here replaced by integration.
   mutations.in.selected.clone.prior.t.s <- sapply(b, function(n.min){
-    integrand <- function(t, mu, lambda, delta, n){
-      p.mut.in.sel <- exp((lambda - delta)*(t.s - t))/exp((lambda - delta)*t.s)
-      p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*( density.a.b.exact(lambda, delta, t.end-t, 1, 0) +(density.a.b.exact(lambda, delta, t.end-t, 1, N*100) - 
-                                                                                           density.a.b.exact(lambda, delta, t.end-t, 1, n))/log(.beta(lambda, delta, t.end-t)))
-    }
-    
-    ## total number of mutations acquired during exponential growth that survived:
-    res <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=max(1,n.min-sel.size))$value
-    return(res)
-  })
+      integrand <- function(t, mu, lambda, delta, n){
+          p.mut.in.sel <- exp((lambda - delta)*(t.s - t))/exp((lambda - delta)*t.s)
+          if(n==0){
+            p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*(density.a.b.exact(lambda, delta, t.end-t, 1, 0) )
+          }else{
+            p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*((density.a.b.exact(lambda, delta, t.end-t, 1, N*100) -                                                                                                   
+                                                                                                                density.a.b.exact(lambda, delta, t.end-t, 1, n))/log(.beta(lambda, delta, t.end-t)))
+            
+          }
+       }
+      ## total number of mutations acquired during exponential growth that survived:
+      res <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=max(0,n.min-sel.size))$value
+      return(res)
+    })
   
   mutations.not.in.selected.clone.prior.t.s <- sapply(b, function(n.min){
     integrand <- function(t, mu, lambda, delta, n){

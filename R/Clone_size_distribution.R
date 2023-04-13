@@ -494,7 +494,8 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   ## in case the selected clone took over, add an offset of the number of mutations in the founder cell to the solution of mutations during steady state (it's again a neutrally expanding clone)
   if(f.sel>1){
     t.ss <- log(N*0.5)/(lambda.ss*(1-s))
-    mutations.in.founder.cell <- (log(N)/(lambda.exp - delta.exp)*mu + t.s*lambda.ss*mu)/2
+    ## the mutation rate is per division, i.e., each daughter cell receives mu/2 mutations. However, the founder cell is a surviving lineage and hence divided with rate 2lambda during homeostasis, to compensate for the loss of the dying lineages
+    mutations.in.founder.cell <- (log(N)/(lambda.exp - delta.exp)*mu/2) + t.s*lambda.ss*mu
     mutations.at.t.end <- mutational.burden(mu, N, 1, s, lambda.ss, t.end-t.s-t.ss, b) + mutations.in.founder.cell
     return(mutations.at.t.end)
   }
@@ -680,7 +681,8 @@ mutational.burden.with.nested.selection <- function(mu, N, lambda.exp, delta.exp
     if(t.s2.rel.to.1st.clone < 0){
       t.s2.rel.to.1st.clone <- 0
     }
-    mutations.in.founder.cell <- (log(N)/(lambda.exp - delta.exp)*mu + t.s*lambda.ss*mu)/2
+    ## the mutation rate is per division, i.e., each daughter cell receives mu/2 mutations. However, the founder cell is a surviving lineage and hence divided with rate 2lambda during homeostasis, to compensate for the loss of the dying lineages
+    mutations.in.founder.cell <- (log(N)/(lambda.exp - delta.exp)*mu/2) + t.s*lambda.ss*mu
     mutations.at.t.end <- mutational.burden.with.selection(mu, N, 1, delta.exp, lambda.ss, t.end.1st.clone, t.s2.rel.to.1st.clone, s2, b) + mutations.in.founder.cell
     return(mutations.at.t.end)
   }else if(f.sel <= 0.05){ ##just take the predicted output at t.end according to homeostatic turnover and neglect expansion of the selected clone

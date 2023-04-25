@@ -9,7 +9,7 @@
 
 
 Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationcaller="Strelka", tumor.col.mutect=10,
-                                  normal.col.mutect=11){
+                                  normal.col.mutect=11, sample.col.mpileup=NA){
   
   if(length(vcf$vcf)==0){
     vcf <- list(vcf=vcf)
@@ -326,14 +326,14 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
       
     
   }else if(mutationcaller=="mpileup"){
+    vcf$vcf <- as.data.frame(vcf$vcf)
     if(type=="snvs"){
       if(info=="readcounts"){
-        readcounts <- t(sapply(vcf$vcf$INFO, function(x){
-          x <- strsplit(x, split="DP4=")[[1]][2]
-          x <- strsplit(x, split=";")[[1]][1]
-          x <- as.numeric(strsplit(x, split=",")[[1]])
-          x <- unname(x)
-          c(sum(x[c(1,2)]), sum(x[c(3,4)]))
+        readcounts <- t(sapply(vcf$vcf[,sample.col.mpileup], function(x){
+          x <- strsplit(x, split=":")[[1]]
+          x <- x[length(x)]
+          x <- as.numeric(strsplit(x, split=",")[[1]][c(1,2)])
+          c(x[c(2)], x[1])
         }))
         rownames(readcounts) <- paste(vcf$vcf$GENE, vcf$vcf$POS, sep=".")
         colnames(readcounts) <- c("REF", "ALT")
@@ -341,23 +341,21 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
         return(readcounts)
       }
       if(info=="depth"){
-        depth <- sapply(vcf$vcf$INFO, function(x){
-          x <- strsplit(x, split="DP4=")[[1]][2]
-          x <- strsplit(x, split=";")[[1]][1]
-          x <- as.numeric(strsplit(x, split=",")[[1]])
-          x <- unname(x)
+        depth <- sapply(vcf$vcf[,sample.col.mpileup], function(x){
+          x <- strsplit(x, split=":")[[1]]
+          x <- x[length(x)]
+          x <- as.numeric(strsplit(x, split=",")[[1]][c(1,2)])
           sum(x)
         })
         
         return(depth)
       }
       if(info=="VAF"){
-        vaf <- sapply(vcf$vcf$INFO, function(x){
-          x <- strsplit(x, split="DP4=")[[1]][2]
-          x <- strsplit(x, split=";")[[1]][1]
-          x <- as.numeric(strsplit(x, split=",")[[1]])
-          x <- unname(x)
-          sum(x[c(3,4)])/ sum(x)
+        vaf <- sapply(vcf$vcf[,sample.col.mpileup], function(x){
+          x <- strsplit(x, split=":")[[1]]
+          x <- x[length(x)]
+          x <- as.numeric(strsplit(x, split=",")[[1]][c(1,2)])
+          x[2]/sum(x)
         })
         vaf <- unname(vaf)
         return(vaf)

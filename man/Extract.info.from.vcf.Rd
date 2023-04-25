@@ -10,7 +10,8 @@ Extract.info.from.vcf(
   type = "snvs",
   mutationcaller = "Strelka",
   tumor.col.mutect = 10,
-  normal.col.mutect = 11
+  normal.col.mutect = 11,
+  sample.col.mpileup = NA
 )
 }
 \arguments{

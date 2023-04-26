@@ -333,7 +333,7 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
           x <- strsplit(x, split=":")[[1]]
           x <- x[length(x)]
           x <- as.numeric(strsplit(x, split=",")[[1]][c(1,2)])
-          c(x[c(2)], x[1])
+          x
         }))
         rownames(readcounts) <- paste(vcf$vcf$GENE, vcf$vcf$POS, sep=".")
         colnames(readcounts) <- c("REF", "ALT")

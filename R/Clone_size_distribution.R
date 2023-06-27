@@ -390,7 +390,7 @@ mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b,
 ####### Supercritical birth-death process with selection of an advantageous subclone
 #########################################################################################################################################
 
-#' Mutation accumulation during exponential expansion followed by homeostasis. 
+#' Mutation accumulation during exponential expansion with clonal selection. 
 #' 
 #' @param mu mutation rate per cell division
 #' @param N population size
@@ -467,7 +467,7 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
 ####### Suprecritical b-d-process followed by critical b-d-process with selection of an advantageous subclone; subclonal mutation acquired during homeostasis
 #########################################################################################################################################
 
-#' Mutation accumulation during exponential expansion followed by homeostasis. 
+#' Mutation accumulation during exponential expansion followed by homeostasis with clonal selection.
 #' 
 #' @param mu mutation rate per cell division
 #' @param N population size
@@ -651,7 +651,7 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
 #' @export
 
 
-mutational.burden.with.nested.selection <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, t.s2, s1, s2, b){
+mutational.burden.with.nested.selection <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, t.s2, s1, s2, b, min.clone.size = 0.05){
   
 
   ## initialize mutation count
@@ -685,7 +685,7 @@ mutational.burden.with.nested.selection <- function(mu, N, lambda.exp, delta.exp
     mutations.in.founder.cell <- (log(N)/(lambda.exp - delta.exp)*mu/2) + t.s*lambda.ss*mu
     mutations.at.t.end <- mutational.burden.with.selection(mu, N, 1, delta.exp, lambda.ss, t.end.1st.clone, t.s2.rel.to.1st.clone, s2, b) + mutations.in.founder.cell
     return(mutations.at.t.end)
-  }else if(f.sel <= 0.05){ ##just take the predicted output at t.end according to homeostatic turnover and neglect expansion of the selected clone
+  }else if(f.sel <= min.clone.size){ ##just take the predicted output at t.end according to homeostatic turnover and neglect expansion of the selected clone
     mutations.at.t.end <- mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b)
   }
   
@@ -921,11 +921,502 @@ mutational.burden.with.nested.selection <- function(mu, N, lambda.exp, delta.exp
 
 
 #########################################################################################################################################
+####### Clonal evolution in hierarchical systems
+#########################################################################################################################################
+
+#' Dynamics of normal cells and i selected clones in a hierarchical tissue with j compartments
+#' 
+#' @param N vector of length j with carrying capacities in each compartment
+#' @param init ixj with the initial condition of the system (i: compartment, j: clone)
+#' @param lambda vector of length j with cell division rates in each compartment
+#' @param delta vector of differentiation rates in each compartment
+#' @param s ixj matrix with selective advantage associated with the i-th driver in the j-th compartment. Selection is modeled as a reduction of the differentiation rate, so 0 <= s <= 1
+#' @param t the time point of evaluation
+#' @return The system state at time t
+#' @export
+.clonal_dynamics <- function(N, init, lambda, delta, s, t){
+  parms <- list(N=N, lambda=lambda, delta=delta, s=s)
+  ## ode requires state as vector and parameters as list
+  state <- ode(as.vector(init), c(0,t), .clonal_dynamics_odes, parms = parms)
+  state <- matrix(state[2,-1], nrow=length(delta))
+  return(state)
+}
+
+.clonal_dynamics_odes <- function(time, state, parms){
+  with(as.list(state, parms), {
+    state <- matrix(state, nrow=length(delta))
+    loss.rates <- .deltas(delta, s, N, state)
+    dn <- sapply(1:length(lambda), function(i){
+      
+      if(i==1){
+        lambda[i]*state[i,] - loss.rates[,i]*state[i,] 
+      }else{
+        lambda[i]*state[i,] - loss.rates[,i]*state[i,] + loss.rates[,i-1]*state[i-1,]
+      }
+    })
+    return(list(as.vector(t(dn))))
+  })
+}
+
+
+#' Determine the loss rates from logistic growth
+#' 
+#' If there are driver mutations in the simulation, this function uses a competition model between drivers and normal cells. The corresponding ODE model reads (N: normal cells, D1: driver 1, D2: driver2; N + D1 + D2=K = const.):
+#' \enumerate{
+#'    \item{dN/dt  = lambda*N - rho_NN N^2/K - rho_ND1 N*D1/K - rho_ND2 N*D2/K and so on}
+#'    \item{dD1/dt = lambda*D1 - rho_D1N D1*N/K - rho_D1D1 * D1^2/K - rho_D1D2 D1*D2/K and so on}
+#'    \item{dD2/dt = lambda*D2 - rho*D2N D2*N/K - rho_D2D1 * D1*D2/K - rho_D2D2 * D2^2/K and so on}
+#' }
+#' We require
+#' \enumerate{
+#' \item rho_NN=rho_D1D1=rho_D2D2=delta/K
+#' \item rho_D1N=r1/K, rhoD2N=r2/K, rhoD2D1=r2/r1/K
+#' \item rho_ND1=2-r1, rho_ND2=2-r2, rhoD1D2=2-r2/r1 and so on
+#' }
+#' @param delta a vector of length i containing the loss rate per compartment
+#' @param s ixj matrix with selective advantage associated with clone j in compartment i
+#' @param N a vector of length i containing the compartment sizes
+#' @param state ixj matrix with the number of cells of the j-th clone in compartment i
+#' @return a vector with the current loss rates
+#' @keywords internal
+#' @export
+#' 
+
+.deltas <- function(delta, s, N, state){
+  
+  res <- sapply(1:nrow(s), function(i){
+    ## competition matrix; can be computed when requiring steady state a + b + c=N
+    rho <- matrix(delta[i]/N[i], length(s[i,]), length(s[i,]))
+    for(k in 1:nrow(rho)){
+      for(l in 1:ncol(rho)){
+        if(k==l){
+          next
+        }else if(k > l){
+          rho[k,l] <- rho[k,l]*s[i,k]/s[i,l]
+        }else{
+          rho[k,l] <- rho[k,l]*(2 - s[i,l]/s[i,k])
+        }
+      }
+    }
+    if(N[i]==0){
+      rho <- matrix(0, ncol(s), ncol(s))
+    }
+    colSums(t(rho)*state[i,])
+  })
+  return(res)
+
+}
+
+
+#' Mutation accumulation during exponential expansion followed by homeostasis with complex subclonal evolution. 
+#' 
+#' @param mu mutation rate per cell division
+#' @param N population size
+#' @param lambda.exp proliferation rate during expansion
+#' @param delta.exp loss rate during expansion
+#' @param lambda.ss proliferation and loss rate during homeostasis
+#' @param t.end end point (starting from homeostasis)
+#' @param t.s named vector of clonal birth dates
+#' @param s named vector of selective advantages
+#' @param tree an object of class phylo, giving the clonal relationships in the samples. Node labels must match names of t.s and s
+#' @param b minimal clone size of interest. Number or vector. 
+#' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario with 2 nested clonal selections (clone starts growing at t.s >t.ss and grows with a selective advantage s; clone 2 starts. Returns the number of mutations present in at least b cells
+#' @export
+
+
+mutational.burden.multiple.clones <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s,s, ancestry, b, min.clone.size = 0.05){
+
+  ## initialize mutation count
+  mutations.at.t.end <- 0
+  
+  ## define the bin-points of the histogram to evaluate:
+  
+  if((log10(N)-1)>2){
+    a <- c(1, 10, 25, 50, 75, 10^seq(2, log10(N)-1, 0.05))
+    
+  }else{
+    a <- c(1, 10, 25, 50, 75, 100)
+  }
+  a <- sort(unique(round(c(a, seq(0.105, 1, 0.05)*N))))
+  a.upper <- c(a[-1], 10*N)
+    
+  ## system state after exponential growth:
+  mutations <- mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, 0, a)
+  
+  ## Iterate through all clonal combinations
+  clonal.combinations <- .mutation.combinations(tree)
+  
+  for(i in 1:nrow(clonal.combinations)){
+    ## mutations from a particular clonal combination must have arisen after the birth of the first clone and before the birth of next subclone
+    t.start <- t.s[colnames(clonal.combinations)[clonal.combinations[i,]==1]][which.min(t.s[colnames(clonal.combinations)[clonal.combinations[i,]==1]])]
+    t.end <- min(c(setdiff(t.start, t.s[colnames(clonal.combinations)[clonal.combinations[i,]==1]]), t.end))
+    
+    # the growth regime changes whenever a new clone emerges - hence we link together the clone size distributions at the cut-points, approximating effective growth rates during each regime
+    # we approximate growth with exponential growth and loss with exponential decay, parametrized by the number of losses in the population during this time frame
+    
+    for(t.2 in 1:length(t.s)){
+      mutations.new <- sapply(b, function(b){
+        
+        ## weighted average of the probability to drift from the lower and upper boundary of the interval to a size of at least b
+        weighted.average <- apply(rbind(a, upper.a, bin.factor), 2, function(x){
+          ## probability that the mutation is present in the selected clone computed at both borders of the bin
+          prob.sel <- x[1]/N
+          prob.sel.upper <- x[2]/N
+          
+          p <- (x[3]* 1-p.a.b(a=x[1], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s) +
+                  (1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)))/(x[3] + 1)
+          
+          return(p)
+          
+        })
+        
+        res <- sum(mutations*weighted.average)
+        
+        res
+      })
+      
+      mutations <- mutations.new
+    }
+
+    
+  }
+  ## Iterate through the clonal birth dates
+  
+  for(i in 1:length(t.s)){
+    
+  }
+  
+  ## I. compute the mutation distribution at t.s, i.e. the time point at which the driver mutation is acquired. Do this in a discretized way, as before. 
+  
+  if((log10(N)-1)>2){
+    a <- c(1, 10, 25, 50, 75, 10^seq(2, log10(N)-1, 0.05))
+    
+  }else{
+    a <- c(1, 10, 25, 50, 75, 100)
+  }
+  a <- sort(unique(round(c(a, seq(0.105, 1, 0.05)*N))))
+  
+  ## compute the mutational burden at t.s
+  mutations.at.t.s <- mutational.burden(mu=mu, N=N, lambda.exp=lambda.exp, delta.exp=delta.exp, lambda.ss=lambda.ss, t.end=t.s, b=a)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  ## compute the relative size of the selected clone at t.end
+  f.sel <- (exp((lambda.ss - s1*lambda.ss)*(t.end - t.s)) - exp((lambda.ss - s1*lambda.ss)*(t.end - t.s2)) + 
+              exp((lambda.ss - s1*s2*lambda.ss)*(t.end - t.s2)))/N
+  
+  ## in case the selected clone took over, add an offset of the number of mutations in the founder cell to the solution of mutations during steady state (it's again a pure clone)
+  if(f.sel>1){
+    ## when did the first clone reach 50% of N?
+    func <- function(t.ss){
+      if(t.s2 < t.ss){
+        (exp((lambda.ss - s1*lambda.ss)*(t.ss - t.s)) - exp((lambda.ss - s1*lambda.ss)*(t.ss - t.s2)) + 
+           exp((lambda.ss - s1*s2*lambda.ss)*(t.ss - t.s2)))/N - 0.5
+      }else{
+        (exp((lambda.ss - s1*lambda.ss)*(t.ss - t.s)))/N - 0.5
+      }
+      
+    }
+    
+    t.ss <- uniroot(func, lower = 0, upper = t.end)$root - t.s
+    #t.ss <- log(N*0.5)/(lambda.ss*(1-s1))
+    t.end.1st.clone <- t.end - t.ss - t.s
+    t.s2.rel.to.1st.clone <- t.s2 - t.ss - t.s
+    if(t.s2.rel.to.1st.clone < 0){
+      t.s2.rel.to.1st.clone <- 0
+    }
+    ## the mutation rate is per division, i.e., each daughter cell receives mu/2 mutations. However, the founder cell is a surviving lineage and hence divided with rate 2lambda during homeostasis, to compensate for the loss of the dying lineages
+    mutations.in.founder.cell <- (log(N)/(lambda.exp - delta.exp)*mu/2) + t.s*lambda.ss*mu
+    mutations.at.t.end <- mutational.burden.with.selection(mu, N, 1, delta.exp, lambda.ss, t.end.1st.clone, t.s2.rel.to.1st.clone, s2, b) + mutations.in.founder.cell
+    return(mutations.at.t.end)
+  }else if(f.sel <= min.clone.size){ ##just take the predicted output at t.end according to homeostatic turnover and neglect expansion of the selected clone
+    mutations.at.t.end <- mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b)
+  }
+  
+  ## else if 5% is reached before, take the distribution at t.s as the input for selection and neglect mutations acquired in the founder cell population after t.s. We thus have two contributions:
+  ## selected clone + subclonal mutations acquired during expansion of the latter
+  ## founder population:drift of mutations acquired prior to t.s
+  
+  ## The drift of the founder cell population is non-trivial, due to the non-exponential decay in a competing system.
+  ## To assess it, we approximate the loss with exponential decay, requiring the same number of death events in the founder cell population 
+  
+  ## First, death events while there's only one clone
+  ode.system.competition.one.mutant <- function(t, y, parms){
+    with(as.list(c(parms, y)), {
+      ## number of selected cells
+      dm <- lambda*m*(1-m/N-s*(N-m)/N)
+      ## number of death events in founder cell population
+      dDeath <- lambda*((N-m)/N + (2-s)*m/N)*(N-m)
+      ## number of divisions in the expanding population
+      dDiv <- lambda*m
+      list(c(dm, dDeath, dDiv))
+    })
+  }
+  ## count the number of death events until t.s2
+  number.of.events <- ode(func=ode.system.competition.one.mutant, times=c(0,t.s2-(t.s)), y=c(m=1, Death=0, Div=0), parms=c(lambda=lambda.ss, s=s1, N=N))
+  
+  ## Second, death events with two clones
+  ode.system.competition.two.mutants <- function(t, y, parms){
+    with(as.list(c(parms, y)), {
+      rhom1m2 <- 2-s2
+      rhonm1 <- 2-s1
+      rhonm2 <- 2-s1*s2
+      ## number of selected m1 cells
+      dm1 <- lambda*m1*(1-m1/N - s1*(N-m1-m2)/N - rhom1m2*m2/N)
+      ## number of selected m2 cells
+      dm2 <- lambda*m2*(1-m2/N-s1*s2*(N-m1-m2)/N - s2*m1/N)
+      ## number of death events in founder cell population
+      dDeath <- lambda*((N-m1-m2)/N + rhonm1*m1/N + rhonm2*m2/N)*(N-m1-m2)
+      
+      
+      ## number of divisions in the expanding population
+      dDiv <- lambda*(m1+m2)
+      list(c(dm1, dm2, dDeath, dDiv))
+    })
+  }
+  
+  number.of.events <- ode(func=ode.system.competition.two.mutants, times=c(0,t.end-(t.s2)), 
+                          y=c(m1 = unname(number.of.events[2,"m"]), m2=1, number.of.events[2,"Death"], number.of.events[2,"Div"]), 
+                          parms=c(lambda=lambda.ss, s1=s1, s2=s2, N=N))
+  
+  number.of.deaths.in.founder <- number.of.events[2,"Death"]
+  
+  ## solve for delta if modeling with exponential decay
+  fun <- function(lambda, delta, N, t, D){
+    delta*N/(lambda-delta)*(exp((lambda-delta)*t) - 1) - D
+  }
+  ## re-scale to 1 to make things easier
+  upper <- fun(lambda=1, N=N, delta=10, t=(t.end-t.s)*lambda.ss, D=number.of.deaths.in.founder)
+  lower <- fun(lambda=1, N=N, delta=1+10^-10, t=(t.end-t.s)*lambda.ss, D=number.of.deaths.in.founder)
+  if((upper>0 & lower>0) | (upper < 0 & lower < 0)){
+    return(1000)
+  }
+  delta.founder <- uniroot(fun, interval=c((1+10^-10), 10), lambda=1, N=N, t=(t.end-(t.s ))*lambda.ss, D=number.of.deaths.in.founder)
+  ## scale back
+  delta.founder <- delta.founder$root*lambda.ss
+  
+  
+  ## Next, compute the mutation distribution at t.s, i.e. the time point at which the driver mutation is acquired. Do this in a discretized way, as before. 
+  
+  if((log10(N)-1)>2){
+    a <- c(1, 10, 25, 50, 75, 10^seq(2, log10(N)-1, 0.05))
+    
+  }else{
+    a <- c(1, 10, 25, 50, 75, 100)
+  }
+  a <- sort(unique(round(c(a, seq(0.105, 1, 0.05)*N))))
+  
+  ## compute the mutational burden at t.s
+  mutations.at.t.s <- mutational.burden(mu=mu, N=N, lambda.exp=lambda.exp, delta.exp=delta.exp, lambda.ss=lambda.ss, t.end=t.s, b=a)
+  
+  ## mutations per bin (cumulative --> discrete)
+  mutations.at.t.s <- mutations.at.t.s - c(mutations.at.t.s[-1],0)
+  
+  ## Now, every mutation can be either present in the founder population, the selected population or both. Its fate is determined by these cases.
+  ## For each bin at ts, the probability that the mutation is present in the selected clone, reads a/N. In this case, it will be present in all selected cells + putatively in a subset of founder cells
+  
+  bin.factor <- mutations.at.t.s/c(mutations.at.t.s[-1],0)
+  bin.factor[is.infinite(bin.factor)] <- 10^8
+  bin.factor[is.na(bin.factor)] <- 1
+  
+  upper.a <- c(a[-1], 2*N)
+  
+  ## next, compute the evolution of these mutations by taking the average from the lower and upper border of each bin
+  
+  mutations.at.t.end <- sapply(b, function(b){
+    ## if b is bigger than the selected clone, it may contain mutations present in the founder cell population only (probability 1-a/N)
+    ## or mutations present in both the selected clone and the founder population (probability a/N)
+    
+    if(b >= f.sel*N){  ## weighted average of the probability to drift from the lower and upper boundary of the interval to a size of at least b
+      weighted.average <- apply(rbind(a, upper.a, bin.factor), 2, function(x){
+        ## probability that the mutation is present in the selected clone computed at both borders of the bin
+        prob.sel <- x[1]/N
+        prob.sel.upper <- x[2]/N
+        
+        
+        p <- (x[3]* (prob.sel*(1-p.a.b(a=x[1]-1, b=b-round(f.sel*N), lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations (-1 because 1 cel is the selected clone)
+                       (1-prob.sel)*(1-p.a.b(a=x[1], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s))) +## mutation only in founder cell 
+                
+                prob.sel.upper*(1-p.a.b(a=x[2]-1, b=b-round(f.sel*N), lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations
+                (1-prob.sel.upper)*(1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) ## mutation only in founder cell 
+              
+        )/(x[3] + 1)
+        
+        
+        return(p)
+        
+        
+        
+      })
+      
+      res <- sum(mutations.at.t.s*weighted.average)
+    }else{ ## mutations present in at least b cells, where b <= f.sel. --> cumulative distribution from founder cell population +
+      ## cumulative distribution from selected clone, but in this case start with f.sel at the lower end as this smaller sizes are not compatible with the selected clone.
+      weighted.average <- apply(rbind(a, upper.a, bin.factor), 2, function(x){
+        
+        prob.sel <- x[1]/N
+        prob.sel.upper <- x[2]/N
+        
+        
+        p <- (x[3]* (prob.sel*(1-p.a.b(a=x[1]-1, b=0, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations (-1 because 1 cel is the selected clone)
+                       (1-prob.sel)*(1-p.a.b(a=x[1], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s))) +## mutation only in founder cell 
+                
+                prob.sel.upper*(1-p.a.b(a=x[2]-1, b=0, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations
+                (1-prob.sel.upper)*(1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) ## mutation only in founder cell 
+              
+        )/(x[3] + 1)
+        
+        return(p)
+        
+        
+      })
+      
+      res <- sum(mutations.at.t.s*weighted.average)
+    }
+    res
+  })
+  
+  ## Now, consider mutations acquired in the selected clone until t.s2
+  
+  size.first.clone.at.t.s2 <- exp((lambda.ss - s1*lambda.ss)*(t.s2 - t.s))
+  if(size.first.clone.at.t.s2>N){
+    size.first.clone.at.t.s2 <- N
+  }
+  f.sel.2 <- exp((lambda.ss - s1*s2*lambda.ss)*(t.end - t.s2))/N
+  
+  a <- a[a <= size.first.clone.at.t.s2]
+  upper.a <- c(a[-1], 2*max(a))
+  mutations.from.selected.clone <- mutations.noncritical.bd(lambda.ss, lambda.ss*s1, t.s2-t.s, mu, a, N=size.first.clone.at.t.s2)
+  
+  ## At t.s2 again, mutations could be present in the second subclone, in the first subclone or in both. Thus, consider the evolution of these mutations 
+  ## mutations per bin 
+  mutations.from.selected.clone <- mutations.from.selected.clone - c(mutations.from.selected.clone[-1],0)
+  
+  bin.factor <- mutations.from.selected.clone/c(mutations.from.selected.clone[-1],0)
+  bin.factor[is.infinite(bin.factor)] <- 10^8
+  bin.factor[is.na(bin.factor)] <- 1
+  
+  
+  mutations.at.t.end.within.selected.clone <- sapply(b, function(b){
+    
+    if(b >= f.sel.2*N){ ## weighted average between lower and upper boundary of the interval
+      
+      weighted.average <- apply(rbind(a, upper.a, bin.factor), 2, function(x){
+        ## probability that the mutation is present in the selected clone computed at both borders of the bin
+        prob.sel <- x[1]/size.first.clone.at.t.s2
+        prob.sel.upper <- x[2]/size.first.clone.at.t.s2
+        (x[3]* (prob.sel*(1-p.a.b(a=x[1]-1, b=round(b-f.sel.2*N), lambda=lambda.ss, delta=s1*lambda.ss, t=t.end-t.s2)) + ## mutation in both populations (-1 because 1 cell is the selected clone)
+                  (1-prob.sel)*(1-p.a.b(a=x[1], b=b, lambda=lambda.ss, delta=s1*lambda.ss, t=t.end-t.s2))) +## mutation only in founder cell 
+            
+            prob.sel.upper*(1-p.a.b(a=x[2]-1, b=round(b-f.sel.2*N), lambda=lambda.ss, delta=s1*lambda.ss, t=t.end-t.s2)) + ## mutation in both populations
+            (1-prob.sel.upper)*(1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=s1*lambda.ss, t=t.end-t.s2)) ## mutation only in founder cell 
+          
+        )/(x[3] + 1)
+        
+      })
+      
+      res <- sum(mutations.from.selected.clone*weighted.average)
+      
+    }else{ ## mutations present in at least b cells, where b <= mutations.from.selected.clone --> cumulative distribution from first selected clone +
+      ## cumulative distribution from second selected clone, but in this case start with mutations.from.selected.clone at the lower end
+      
+      ## cumulative distribution from selected clone, but in this case start with f.sel.2 at the lower end as this smaller sizes are not compatible with the selected clone.
+      
+      
+      weighted.average <- apply(rbind(a, upper.a, bin.factor), 2, function(x){
+        
+        prob.sel <- x[1]/size.first.clone.at.t.s2
+        prob.sel.upper <- x[2]/size.first.clone.at.t.s2
+        
+        
+        p <- (x[3]* (prob.sel*(1-p.a.b(a=x[1]-1, b=0, lambda=lambda.ss, delta=s1*lambda.ss, t=t.end-t.s2)) + ## mutation in both populations (-1 because 1 cel is the selected clone)
+                       (1-prob.sel)*(1-p.a.b(a=x[1], b=b, lambda=lambda.ss, delta=s1*lambda.ss, t=t.end-t.s2))) +## mutation only in founder cell 
+                
+                prob.sel.upper*(1-p.a.b(a=x[2]-1, b=0, lambda=lambda.ss, delta=s1*lambda.ss, t=t.end-t.s2)) + ## mutation in both populations
+                (1-prob.sel.upper)*(1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=s1*lambda.ss, t=t.end-t.s2)) ## mutation only in founder cell 
+              
+        )/(x[3] + 1)
+        
+        return(p)
+        
+        
+      })
+      
+      res <- sum(mutations.from.selected.clone*weighted.average)
+      
+    }
+    res
+  })
+  
+  
+  ## Finally, we need to add up new mutations acquired during the expansion of both selected clones
+  
+  mutations.from.first.selected.clone <- mutations.noncritical.bd(lambda.ss, lambda.ss*s1, t.end-t.s2, mu, b, N=N)*(size.first.clone.at.t.s2-1)
+  
+  mutations.from.second.selected.clone <- mutations.noncritical.bd(lambda.ss, lambda.ss*s1*s2, t.end-t.s2, mu, b, N=N)
+  
+  mutations.from.founder.clone <- mutations.noncritical.bd(lambda.ss, delta.founder, t.end - t.s, mu, b, N0=N, N=(1-f.sel)*N)
+  
+  mutations.at.t.end <- mutations.at.t.end + mutations.at.t.end.within.selected.clone + mutations.from.first.selected.clone + mutations.from.second.selected.clone +
+    mutations.from.founder.clone
+  
+  mutations.at.t.end
+}
+
+
+## compute all combinations of clones harboring a particular mutation. 
+## tree, object of class phylo, giving the clonal structure
+.mutation.combinations <- function(tree){
+  
+  ancestry <- tree$edge
+  
+  nodes <- unique(as.vector(ancestry))
+  combinations <- matrix(0, ncol=length(nodes), nrow=0, dimnames = list(c(), 1:length(nodes)))
+  ## iterate through the clone of origin of the mutation - either an entire subclone harbors the mutation as well or none of the subclone cells
+  for(cell.of.origin in nodes){
+    ## just in this clone, no daughter clone
+    combinations <- rbind(combinations,
+                          replace(rep(0, ncol(combinations)), cell.of.origin, 1))
+    
+    # in this clone and any combination of its daughters (plus, obviously, all of their respective descendants)
+    daughters <- ancestry[ancestry[,1]==cell.of.origin,2]
+    if(length(daughters)==0){next}
+    for(m in 1:length(daughters)){
+      daughter.combinations <- combn(as.character(daughters), m, simplify = T)
+      for(k in 1:ncol(daughter.combinations)){
+        combinations <- rbind(combinations, 
+                              replace(rep(0, ncol(combinations)),unique(c(cell.of.origin, as.numeric(daughter.combinations[,k]), unlist(sapply(daughter.combinations[,k], function(x){
+                                phangorn::Descendants(tree, as.numeric(x), "all")
+                              })))),1))
+      }
+    }
+  }
+  return(combinations)
+}
+
+#########################################################################################################################################
 ####### Simulate whole genome sequencing
 #########################################################################################################################################
 
 
-#' Simulate sampling as in WGS by simulating the actual sampling (i.e. it's not the expected value but a sampling instance)
+#' Simulate read sampling in WGS by Binomial sampling
 #' 
 #' @param clone.sizes vector of clone sizes at which cumulative mutation counts were measured
 #' @param expected.mutations expected number of mutations at each clone size

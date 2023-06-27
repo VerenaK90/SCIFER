@@ -1421,7 +1421,8 @@ mutational.burden.multiple.clones <- function(mu, N, lambda.exp, delta.exp, lamb
 #' @param clone.sizes vector of clone sizes at which cumulative mutation counts were measured
 #' @param expected.mutations expected number of mutations at each clone size
 #' @param depth sequencing depth
-#' @param false.negative.per.vaf matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.
+#' @param sensitivity logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf
+#' @param false.negative.per.vaf optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise. Must be provided if sensitivity=T
 #' @return A vector of simulated VAFs
 #' @export
 
@@ -1546,8 +1547,8 @@ ExpectedNumberAfterWGS <- function(M, vafs, depth, false.negative.per.vaf, min.v
 #' @param clone.sizes vector of clone sizes at which cumulative mutation counts were measured
 #' @param expected.mutations expected number of mutations at each clone size
 #' @param depth sequencing depth, only specify for bulk WGS
-#' @param false.negative.per.vaf matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.
-#' @param sensitivity logical, if sensitivty of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf
+#' @param false.negative.per.vaf optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise. Must be provided if sensitivity=T
+#' @param sensitivity logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf
 #' @param min.vaf the minimal VAF to return
 #' @param ncells the number of sequenced cells, only specify if seqtype="sc"
 #' @return A vector of simulated VAFs

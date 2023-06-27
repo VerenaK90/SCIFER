@@ -2,7 +2,7 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{.simulated.wgs.data}
 \alias{.simulated.wgs.data}
-\title{Simulate sampling as in WGS by simulating the actual sampling (i.e. it's not the expected value but a sampling instance)}
+\title{Simulate read sampling in WGS by Binomial sampling}
 \usage{
 .simulated.wgs.data(
   clone.sizes,
@@ -20,11 +20,13 @@
 
 \item{depth}{sequencing depth}
 
-\item{false.negative.per.vaf}{matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.}
+\item{sensitivity}{logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf}
+
+\item{false.negative.per.vaf}{optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise. Must be provided if sensitivity=T}
 }
 \value{
 A vector of simulated VAFs
 }
 \description{
-Simulate sampling as in WGS by simulating the actual sampling (i.e. it's not the expected value but a sampling instance)
+Simulate read sampling in WGS by Binomial sampling
 }

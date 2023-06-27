@@ -2,7 +2,7 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{mutational.burden.selection.expansion}
 \alias{mutational.burden.selection.expansion}
-\title{Mutation accumulation during exponential expansion followed by homeostasis.}
+\title{Mutation accumulation during exponential expansion with clonal selection.}
 \usage{
 mutational.burden.selection.expansion(mu, lambda, delta, s, t.s, t.end, b)
 }
@@ -27,5 +27,5 @@ mutational.burden.selection.expansion(mu, lambda, delta, s, t.s, t.end, b)
 This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least b cells
 }
 \description{
-Mutation accumulation during exponential expansion followed by homeostasis.
+Mutation accumulation during exponential expansion with clonal selection.
 }

@@ -26,9 +26,9 @@ simulated.data(
 
 \item{ncells}{the number of sequenced cells, only specify if seqtype="sc"}
 
-\item{sensitivity}{logical, if sensitivty of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf}
+\item{sensitivity}{logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf}
 
-\item{false.negative.per.vaf}{matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF.}
+\item{false.negative.per.vaf}{optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise.}
 
 \item{min.vaf}{the minimal VAF to return}
 }

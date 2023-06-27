@@ -2,7 +2,7 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{p.ss.exact}
 \alias{p.ss.exact}
-\title{Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process}
+\title{Clone size distribution of a critical birth-death process (exact).}
 \usage{
 p.ss.exact(lambda, a, b, t)
 }
@@ -16,8 +16,8 @@ p.ss.exact(lambda, a, b, t)
 \item{t}{time}
 }
 \value{
-The probability to growth from a to b within t.
+The probability to grow from a to b within t.
 }
 \description{
-Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process
+Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process.
 }

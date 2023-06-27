@@ -2,7 +2,7 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{mutations.noncritical.bd}
 \alias{mutations.noncritical.bd}
-\title{Expected number of neutral mutations that are present in at least n.min cells at t.ss in an exponentially growing or contracting tissue.}
+\title{Mutation accumulation in a growing tissue}
 \usage{
 mutations.noncritical.bd(
   lambda,

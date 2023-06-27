@@ -2,7 +2,7 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{p.a.b}
 \alias{p.a.b}
-\title{Probability of a clone of size a to grow to size b within t according to a supercritical linear birth-death process.}
+\title{Clone size distribution in a noncritical birth-death process (approximate).}
 \usage{
 p.a.b(lambda, delta, t, a, b, mode = "cumulative", approx = "highnumbers")
 }
@@ -19,11 +19,11 @@ p.a.b(lambda, delta, t, a, b, mode = "cumulative", approx = "highnumbers")
 
 \item{mode}{'density' if density distribution is to be returned , 'cumulative' if cumulative distribution is to be returned. Defaults to 'cumulative'}
 
-\item{approx}{Approximation to be used. Defaults to 'highnumbers'; i.e. we want to approximate with a gamma distribution if a and b are high.}
+\item{approx}{Approximation to be used. Defaults to 'highnumbers'; i.e. we want to approximate with a gamma distribution if a and b are large.}
 }
 \value{
 The probability of growing from size a to size b within t. The Function switches between the exact solution and an approximate solution according to a parametrized gamma distribution.
 }
 \description{
-Probability of a clone of size a to grow to size b within t according to a supercritical linear birth-death process.
+Probability of a clone of size a to grow to size b within t according to a noncritical linear birth-death process.
 }

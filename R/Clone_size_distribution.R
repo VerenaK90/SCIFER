@@ -2,7 +2,9 @@
 ####### Non-critical b-d-process 
 #########################################################################################################################################
 
-#' Exact probability to grow from a to be within time t according to a supercritical birth-death process. Exact solution according to Bailey, 1964
+#' Non-critical clone size distribution (exact).
+#' 
+#' @description Exact probability to grow from a clone of size a to a clone of size b within time t according to a non-critical birth-death process. Exact solution according to Bailey, 1964.
 #'
 #' @param lambda proliferation rate 
 #' @param delta loss rate
@@ -13,16 +15,6 @@
 #' @examples
 #' density.a.b.exact(1, 0, 10, 1, 2)
 #' @export
-
-.alpha <- function(lambda, delta, t){
-  (delta*exp((lambda - delta)*t) - delta)/
-    (lambda*exp((lambda - delta)*t) - delta)
-}
-
-.beta <- function(lambda, delta, t){
-  (lambda*exp((lambda - delta)*t) - lambda)/
-    (lambda*exp((lambda-delta)*t) - delta)
-}
 
 density.a.b.exact <- function(lambda, delta, t, a, b){
   if(a==1){
@@ -44,15 +36,25 @@ density.a.b.exact <- function(lambda, delta, t, a, b){
   }
 }
 
-#' Probability of a clone of size a to grow to size b within t according to a supercritical linear birth-death process. 
-#'
+.alpha <- function(lambda, delta, t){
+  (delta*exp((lambda - delta)*t) - delta)/
+    (lambda*exp((lambda - delta)*t) - delta)
+}
+
+.beta <- function(lambda, delta, t){
+  (lambda*exp((lambda - delta)*t) - lambda)/
+    (lambda*exp((lambda-delta)*t) - delta)
+}
+
+#' Clone size distribution in a noncritical birth-death process (approximate).
+#' @description Probability of a clone of size a to grow to size b within t according to a noncritical linear birth-death process. 
 #' @param lambda proliferation rate 
 #' @param delta loss rate
 #' @param t time
 #' @param a clone size at t=0
 #' @param b clone size at t=t
 #' @param mode 'density' if density distribution is to be returned , 'cumulative' if cumulative distribution is to be returned. Defaults to 'cumulative'
-#' @param approx Approximation to be used. Defaults to 'highnumbers'; i.e. we want to approximate with a gamma distribution if a and b are high.
+#' @param approx Approximation to be used. Defaults to 'highnumbers'; i.e. we want to approximate with a gamma distribution if a and b are large.
 #' @return The probability of growing from size a to size b within t. The Function switches between the exact solution and an approximate solution according to a parametrized gamma distribution.
 #' @export
 #' 
@@ -96,8 +98,9 @@ p.a.b <- function(lambda, delta, t, a, b, mode="cumulative", approx="highnumbers
 }
 
 
-#' Expected number of neutral mutations that are present in at least n.min cells at t.ss in an exponentially growing or contracting tissue.
-#'
+#' Mutation accumulation in a growing tissue
+#' 
+#' @description Expected number of neutral mutations that are present in at least n.min cells at t.ss in an exponentially growing or contracting tissue.
 #' @param lambda proliferation rate 
 #' @param delta loss rate
 #' @param t.end time
@@ -168,13 +171,14 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
 ####### Critical b-d-process 
 #########################################################################################################################################
 
-#' Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process
-#'
+#' Clone size distribution of a critical birth-death process (exact).
+#' 
+#' @description Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process.
 #' @param lambda proliferation rate 
 #' @param a clone size at t=0
 #' @param b clone size at t=t
 #' @param t time
-#' @return The probability to growth from a to b within t.
+#' @return The probability to grow from a to b within t.
 #' @export
 
 p.ss.exact <- function(lambda, a, b, t){
@@ -196,8 +200,9 @@ p.ss.exact <- function(lambda, a, b, t){
   res
 }
 
-#' Approximate solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process using gamma distribution
-#'
+#' Clone size distribution of a critical birth-death process (approximate).
+#' 
+#' @description Probabilitly to grow from a clone of size a to a clone of size b within t in a critical birth-death process using a parametrized gamma distribution for approximation.
 #' @param lambda proliferation rate 
 #' @param a clone size at t=0
 #' @param b clone size at t=t
@@ -219,8 +224,8 @@ p.ss.approx <- function(lambda, a, b, t, mode="density"){
   }
 }
 
-#' Function to compute the probabilty to grow from a to b in a critical b-d process using automatic switching between exact and approximate solution.
-#' Cutoff criterion: a*p*(1-p)>=9 and b*p*(1-p)>=9
+#' Clone size distribution in a critical b-d process. 
+#' @description Function to compute the probabilty to grow from a to b in a critical b-d process using automatic switching between exact and approximate solution. Cutoff criterion: a*p*(1-p)>=9 and b*p*(1-p)>=9
 #' @param lambda proliferation rate 
 #' @param a clone size at t=0
 #' @param b clone size at t=t; single value or vector
@@ -306,8 +311,8 @@ mutations.during.steady.state <- function(lambda, N, mu, n.min, t.end){
 #' @param lambda.ss proliferation and loss rate during homeostasis
 #' @param t.end end point (starting from homeostasis)
 #' @param b minimal clone size of interest. Number or vector. 
-#' @param accuracy.a step size in which mutations accumulated during expansion are evaluated between 5 and 100%; defaults to 5%
-#' @param return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations. Returns the number of mutations present in at least b cells.
+#' @param accuracy.a step size in which mutations accumulated during expansion are evaluated (evaluation runs between 5 and 100%); defaults to 5%
+#' @return This function returns the approximate number of mutations in clones of at least b cells, by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations. 
 #' @export
 
 

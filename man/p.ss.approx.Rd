@@ -2,7 +2,7 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{p.ss.approx}
 \alias{p.ss.approx}
-\title{Approximate solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process using gamma distribution}
+\title{Clone size distribution of a critical birth-death process (approximate).}
 \usage{
 p.ss.approx(lambda, a, b, t, mode = "density")
 }
@@ -21,5 +21,5 @@ p.ss.approx(lambda, a, b, t, mode = "density")
 The approximate probability to grow from a to b within t.
 }
 \description{
-Approximate solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process using gamma distribution
+Probabilitly to grow from a clone of size a to a clone of size b within t in a critical birth-death process using a parametrized gamma distribution for approximation.
 }

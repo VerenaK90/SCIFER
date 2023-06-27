@@ -30,9 +30,10 @@ mutational.burden(
 
 \item{b}{minimal clone size of interest. Number or vector.}
 
-\item{accuracy.a}{step size in which mutations accumulated during expansion are evaluated between 5 and 100%; defaults to 5%}
-
-\item{return}{This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations. Returns the number of mutations present in at least b cells.}
+\item{accuracy.a}{step size in which mutations accumulated during expansion are evaluated (evaluation runs between 5 and 100%); defaults to 5%}
+}
+\value{
+This function returns the approximate number of mutations in clones of at least b cells, by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations.
 }
 \description{
 Mutation accumulation during epxonential expansion followed by homeostasis.

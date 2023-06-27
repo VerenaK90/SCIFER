@@ -2,8 +2,7 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{p.ss}
 \alias{p.ss}
-\title{Function to compute the probabilty to grow from a to b in a critical b-d process using automatic switching between exact and approximate solution.
-Cutoff criterion: a*p*(1-p)>=9 and b*p*(1-p)>=9}
+\title{Clone size distribution in a critical b-d process.}
 \usage{
 p.ss(lambda, a, b, t)
 }
@@ -22,6 +21,5 @@ p.ss(lambda, a, b, t)
 The probability to grow from a to b within t
 }
 \description{
-Function to compute the probabilty to grow from a to b in a critical b-d process using automatic switching between exact and approximate solution.
-Cutoff criterion: a*p*(1-p)>=9 and b*p*(1-p)>=9
+Function to compute the probabilty to grow from a to b in a critical b-d process using automatic switching between exact and approximate solution. Cutoff criterion: a*p*(1-p)>=9 and b*p*(1-p)>=9
 }

@@ -1,0 +1,512 @@
+selected.parameters$Sample=="id2259",]$lower, NA, NA,
+selected.parameters[selected.parameters$Parameter=="growth_per_year" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX004",]$lower, NA,
+selected.parameters[selected.parameters$Parameter=="growth_per_year" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX003",]$lower, NA,
+selected.parameters[selected.parameters$Parameter=="growth_per_year" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX008",]$lower, NA),
+Growth_per_year_max = c(selected.parameters[selected.parameters$Parameter=="growth_per_year"&
+selected.parameters$Resolution==0.01 &
+selected.parameters$Sample=="id2259",]$upper, NA, NA,
+selected.parameters[selected.parameters$Parameter=="growth_per_year" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX004",]$upper, NA,
+selected.parameters[selected.parameters$Parameter=="growth_per_year" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX003",]$upper, NA,
+selected.parameters[selected.parameters$Parameter=="growth_per_year" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX008",]$upper, NA),
+Age_of_clone_median = c(selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="id2259",]$Median, 46.9, 27.8,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX004",]$Median, 46,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX003",]$Median, 51,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX008",]$Median, 60),
+Age_of_clone_min = c(selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="id2259",]$lower, NA, NA,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX004",]$lower, NA,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX003",]$lower, NA,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX008",]$lower, NA),
+Age_of_clone_max = c(selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="id2259",]$upper, NA, NA,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX004",]$upper, NA,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX003",]$upper, NA,
+selected.parameters[selected.parameters$Parameter=="age_of_clone" &
+selected.parameters$Resolution==0.01&
+selected.parameters$Sample=="KX008",]$upper, NA),
+Method = c("MOSAIK", "Longitudinal", "Phylodynamics", "MOSAIK", "Phylodynamics",
+"MOSAIK", "Phylodynamics", "MOSAIK", "Phylodynamics"))
+to.plot$Driver <- sample.info.published.data[sapply(to.plot$ID, function(x){which(sample.info.published.data$SAMPLE==x)}),]$CHIP.mutation
+pdf("./Nextcloud/Hematopoiesis/Blood_oxford/Mutation_analysis/Cohort_analysis/Published_data/Compare_age_w_phylodynamics.pdf", width=4, height = 4)
+ggplot(to.plot, aes(x=Method, y=Growth_per_year_median, ymin = Growth_per_year_min, ymax = Growth_per_year_max)) +
+geom_pointrange() + facet_wrap(~ID, scales = "free")
+ggplot(to.plot, aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange()+ facet_wrap(~ID, scales = "free")
+ggplot(to.plot[to.plot$Method!="Longitudinal",], aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange() + facet_wrap(~ID) +  expand_limits(x = 0, y = 0)+ facet_wrap(~ID, scales = "free")
+## 2D-scatter plot:
+to.plot.2 <- reshape(to.plot, v.names = c("Growth_per_year_max", "Growth_per_year_median",
+"Growth_per_year_min", "Age_of_clone_min",
+"Age_of_clone_median", "Age_of_clone_max"), idvar = "ID", timevar = "Method", direction = "wide")
+ggplot(to.plot.2[to.plot.2$ID %in% selected.samples.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics, col=Driver)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with known driver") +
+scale_color_manual(values=CHIP.color) + scale_x_continuous(limits=c(0, 50)) + scale_y_continuous(limits=c(0,50))
+ggplot(to.plot.2[to.plot.2$ID %in% selected.no.driver.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with unknown driver")
+dev.off()
+to.plot
+to.plot.2
+ggplot(to.plot.2[to.plot.2$ID %in% selected.samples.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics, col=Driver)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with known driver") +
+scale_color_manual(values=CHIP.color) + scale_x_continuous(limits=c(0, 60)) + scale_y_continuous(limits=c(0,60))
+ggplot(to.plot.2[to.plot.2$ID %in% selected.samples.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics, col=Driver)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with known driver") +
+scale_color_manual(values=CHIP.color) + scale_x_continuous(limits=c(0, 55)) + scale_y_continuous(limits=c(0,55))
+pdf("./Nextcloud/Hematopoiesis/Blood_oxford/Mutation_analysis/Cohort_analysis/Published_data/Compare_age_w_phylodynamics.pdf", width=4, height = 4)
+ggplot(to.plot, aes(x=Method, y=Growth_per_year_median, ymin = Growth_per_year_min, ymax = Growth_per_year_max)) +
+geom_pointrange() + facet_wrap(~ID, scales = "free")
+ggplot(to.plot, aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange()+ facet_wrap(~ID, scales = "free")
+ggplot(to.plot[to.plot$Method!="Longitudinal",], aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange() + facet_wrap(~ID) +  expand_limits(x = 0, y = 0)+ facet_wrap(~ID, scales = "free")
+## 2D-scatter plot:
+to.plot.2 <- reshape(to.plot, v.names = c("Growth_per_year_max", "Growth_per_year_median",
+"Growth_per_year_min", "Age_of_clone_min",
+"Age_of_clone_median", "Age_of_clone_max"), idvar = "ID", timevar = "Method", direction = "wide")
+ggplot(to.plot.2[to.plot.2$ID %in% selected.samples.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics, col=Driver)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with known driver") +
+scale_color_manual(values=CHIP.color) + scale_x_continuous(breaks = seq(0, 50, 25),
+labels=c("0", "25", "50")) +
+scale_y_continuous(breaks= c(0, 25, 50))
+ggplot(to.plot.2[to.plot.2$ID %in% selected.no.driver.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with unknown driver")
+dev.off()
+pdf("./Nextcloud/Hematopoiesis/Blood_oxford/Mutation_analysis/Cohort_analysis/Published_data/Compare_age_w_phylodynamics.pdf", width=4, height = 4)
+ggplot(to.plot, aes(x=Method, y=Growth_per_year_median, ymin = Growth_per_year_min, ymax = Growth_per_year_max)) +
+geom_pointrange() + facet_wrap(~ID, scales = "free")
+ggplot(to.plot, aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange()+ facet_wrap(~ID, scales = "free")
+ggplot(to.plot[to.plot$Method!="Longitudinal",], aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange() + facet_wrap(~ID) +  expand_limits(x = 0, y = 0)+ facet_wrap(~ID, scales = "free")
+## 2D-scatter plot:
+to.plot.2 <- reshape(to.plot, v.names = c("Growth_per_year_max", "Growth_per_year_median",
+"Growth_per_year_min", "Age_of_clone_min",
+"Age_of_clone_median", "Age_of_clone_max"), idvar = "ID", timevar = "Method", direction = "wide")
+ggplot(to.plot.2[to.plot.2$ID %in% selected.samples.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics, col=Driver)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with known driver") +
+scale_color_manual(values=CHIP.color) + scale_x_continuous(breaks = seq(0, 50, 25),
+labels=c("0", "25", "50")) +
+scale_y_continuous(breaks= c(0, 25, 50)) + theme(aspect.ratio = 1)
+ggplot(to.plot.2[to.plot.2$ID %in% selected.no.driver.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with unknown driver")
+dev.off()
+pdf("./Nextcloud/Hematopoiesis/Blood_oxford/Mutation_analysis/Cohort_analysis/Published_data/Compare_age_w_phylodynamics.pdf", width=4, height = 4)
+ggplot(to.plot, aes(x=Method, y=Growth_per_year_median, ymin = Growth_per_year_min, ymax = Growth_per_year_max)) +
+geom_pointrange() + facet_wrap(~ID, scales = "free")
+ggplot(to.plot, aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange()+ facet_wrap(~ID, scales = "free")
+ggplot(to.plot[to.plot$Method!="Longitudinal",], aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange() + facet_wrap(~ID) +  expand_limits(x = 0, y = 0)+ facet_wrap(~ID, scales = "free")
+## 2D-scatter plot:
+to.plot.2 <- reshape(to.plot, v.names = c("Growth_per_year_max", "Growth_per_year_median",
+"Growth_per_year_min", "Age_of_clone_min",
+"Age_of_clone_median", "Age_of_clone_max"), idvar = "ID", timevar = "Method", direction = "wide")
+ggplot(to.plot.2[to.plot.2$ID %in% selected.samples.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics, col=Driver)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with known driver") +
+scale_color_manual(values=CHIP.color) + scale_x_continuous(breaks = seq(0, 50, 25),
+labels=c("0", "25", "50")) +
+scale_y_continuous(breaks= c(0, 25, 50), labels=c("0", "25", "50")) + theme(aspect.ratio = 1)
+ggplot(to.plot.2[to.plot.2$ID %in% selected.no.driver.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with unknown driver")
+dev.off()
+pdf("./Nextcloud/Hematopoiesis/Blood_oxford/Mutation_analysis/Cohort_analysis/Published_data/Compare_age_w_phylodynamics.pdf", width=4, height = 4)
+ggplot(to.plot, aes(x=Method, y=Growth_per_year_median, ymin = Growth_per_year_min, ymax = Growth_per_year_max)) +
+geom_pointrange() + facet_wrap(~ID, scales = "free")
+ggplot(to.plot, aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange()+ facet_wrap(~ID, scales = "free")
+ggplot(to.plot[to.plot$Method!="Longitudinal",], aes(x=Method, y=Age_of_clone_median, ymin = Age_of_clone_min, ymax = Age_of_clone_max)) +
+geom_pointrange() + facet_wrap(~ID) +  expand_limits(x = 0, y = 0)+ facet_wrap(~ID, scales = "free")
+## 2D-scatter plot:
+to.plot.2 <- reshape(to.plot, v.names = c("Growth_per_year_max", "Growth_per_year_median",
+"Growth_per_year_min", "Age_of_clone_min",
+"Age_of_clone_median", "Age_of_clone_max"), idvar = "ID", timevar = "Method", direction = "wide")
+ggplot(to.plot.2[to.plot.2$ID %in% selected.samples.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics, col=Driver)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with known driver") +
+scale_color_manual(values=CHIP.color) + scale_x_continuous(breaks = seq(0, 50, 25),
+labels=c("0", "25", "50"), limits=c(0, 50)) +
+scale_y_continuous(breaks= c(0, 25, 50), labels=c("0", "25", "50")) + theme(aspect.ratio = 1)
+ggplot(to.plot.2[to.plot.2$ID %in% selected.no.driver.published.data,], aes(y=Age_of_clone_median.MOSAIK, ymin=Age_of_clone_min.MOSAIK, ymax=Age_of_clone_max.MOSAIK,
+x = Age_of_clone_median.Phylodynamics)) + geom_point() + geom_pointrange() + expand_limits(x = 0, y = 0) +
+geom_abline(slope=1, intercept = 0, linetype=2) + ggtitle("Selection with unknown driver")
+dev.off()
+load("Downloads/annotated_mut_set_AX001_4_01_standard_rho01")
+filtered_muts$Genotype_shared_bin
+filtered_muts$COMB_mats.tree.build
+names(filtered_muts$COMB_mats.tree.build)
+head(filtered_muts$COMB_mats.tree.build$mat)
+filtered_muts$COMB_mats.tree.build$mat[filtered_muts$COMB_mats.tree.build$mat$Gene=="DNMT3A",]
+names(filtered_muts)
+names(filtered_muts$dna_strings)
+names(filtered_muts$dna_strings$Ancestral)
+head(filtered_muts$dna_strings$Ancestral)
+names(filtered_muts$dna_strings)
+names(filtered_muts)
+filtered_muts$summary
+head(filtered_muts$COMB_mats.tree.build$Genotype_bin)
+head(filtered_muts$COMB_mats.tree.build$mat)
+unique(filtered_muts$COMB_mats.tree.build$mat$Mut_type)
+unique(filtered_muts$COMB_mats.tree.build$mat$Protein)
+unique(filtered_muts$COMB_mats.tree.build$mat$Transcript)
+load("./Downloads/mats_and_params_KX004_4_01")
+head(COMB_mats$mat)
+head(tree$node.label)
+head(filtered_params)
+filter_params
+## subset the drivers reported in Mitchell et al.:
+drivers <- filtered_muts$COMB_mats.tree.build$mat[filtered_muts$COMB_mats.tree.build$mat$Gene %in% c("DNMT3A", "TET2", "SF3B1", "PPM1D", "TP53", "KRAS", "CBL", "ASXL1")]
+filtered_muts$COMB_mats.tree.build$mat$Gene
+## subset the drivers reported in Mitchell et al.:
+drivers <- filtered_muts$COMB_mats.tree.build$mat[filtered_muts$COMB_mats.tree.build$mat$Gene %in% c("DNMT3A", "TET2", "SF3B1", "PPM1D", "TP53", "KRAS", "CBL", "ASXL1"),]
+head(drivers)
+drivers$Protein
+drivers <- drivers[drivers$Protein!="-",]
+drivers
+tree <- read.tree(tree.file)
+tree$edge.color <- rep("black", length(tree$edge.length))
+drivers <- drivers[order(drivers$node),]
+for(j in 1:nrow(drivers)){
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+CHIP.color
+driver.colors <- c("DNMT3A" = "#00A08A", "TET2" = "#FF0000", "SF3B1" = "orange",
+"PPM1D" = "#5BBCD6", "TP53" = "firebrick", "KRAS" = "purple", "CBL" = "green", "ASXL1" = "#F2AD00")
+for(j in 1:nrow(drivers)){
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+library(phangorn)
+for(j in 1:nrow(drivers)){
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+library(cgwtools)
+for(j in 1:nrow(drivers)){
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+library(ggplot2)
+library(ggpubr)
+library(phangorn)
+library(RRphylo)
+library(cgwtools)
+for(j in 1:nrow(drivers)){
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+library(ape)
+for(j in 1:nrow(drivers)){
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+??getDescendants
+library(phytools)
+for(j in 1:nrow(drivers)){
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards")
+drivers[j,]$node
+tree$edge.color[tree$edge[,2] == drivers[j,]$node]
+tree$edge[,2]
+which(tree$edge[,2] == drivers[j,]$node)
+length(tree$edge.length)
+tree$edge.color <- rep("black", length(tree$edge.length))
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+tree$edge.color[tree$edge[,2] == drivers[j,]$node]
+driver.colors[drivers[j,]$Gene]
+drivers[j,]$Gene
+tree$edge.color <- rep("black", length(tree$edge.length))
+drivers <- drivers[order(drivers$node),]
+for(j in 1:nrow(drivers)){
+tree$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[as.character(drivers[j,]$Gene)]
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree$edge.color[tree$edge[,2] == k] <- driver.colors[as.character(drivers[j,]$Gene)]
+}
+}
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards")
+tree$edge.color[tree$edge[,2] == drivers[j,]$node]
+tree$edge.color[tree$edge[,2] == k]
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards", edge.color = tree$edge.color)
+drivers[order(drivers$node),]
+drivers[j,]$node
+drivers[j,]$node*2
+children <- getDescendants(tree, node = drivers[j,]$node) ## also color downstream of the node
+children
+## subset the drivers reported in Mitchell et al.:
+drivers <- filtered_muts$COMB_mats.tree.build$mat[filtered_muts$COMB_mats.tree.build$mat$Gene %in% c("DNMT3A", "TET2", "SF3B1", "PPM1D", "TP53", "KRAS", "CBL", "ASXL1"),]
+drivers
+max(filtered_muts$COMB_mats.tree.build$mat$node)
+tree$Nnode
+length(tree$tip.label)
+451+450
+head(COMB_mats$mat)
+drivers
+drivers <- drivers[drivers$Protein!="-",]
+drivers
+filtered_muts$filter_code
+filtered_muts$params
+COMB_mats$gender
+COMB_mats$nsamp
+head(COMB_mats$mat)
+head(COMB_mats$NV)
+load("./Downloads/annotated_mut_set_AX001_4_01_standard_rho01")
+filtered_muts$params
+load("./Downloads/annotated_mut_set_KX004_4_01_standard_rho01")
+i <- "id2259"
+tree.file <- list.files(paste0("./Nextcloud/Hematopoiesis/Blood_oxford/CHIP_Papers/Fabre_et_al/", i),
+pattern = "tree", full.names = T)
+mut.file <- list.files(paste0("./Nextcloud/Hematopoiesis/Blood_oxford/CHIP_Papers/Fabre_et_al/", i),
+pattern = "details", full.names = T)
+load(tree.file)
+load(mut.file)
+muts <- get(lsdata(mut.file))
+## subset the drivers reported in Fabre et al.:
+drivers <- muts[muts$coding_change_CHgeneInModel=="Coding change" & muts$Gene %in% c("SF3B1", "CBL", "TET2", "CTCF", "U2AF1", "SRSF2", "PPM1D", "TP53"),]
+drivers
+## compute branch length in actual # mutations using mutation file
+adjusted.length <- rep(NA, nrow(tree_SNV_c_ultra$edge))
+for(j in 1:nrow(tree_SNV_c_ultra$edge)){
+adjusted.length[j] <- sum(muts$node==tree_SNV_c_ultra$edge[j,2])
+}
+tree_SNV_c_ultra$edge.length <- adjusted.length
+tree_SNV_c_ultra$edge.color <- rep("black", length(tree_SNV_c_ultra$edge.length))
+drivers <- drivers[order(drivers$node),]
+for(j in 1:nrow(drivers)){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree_SNV_c_ultra, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+tree <- tree_SNV_c_ultra
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards", edge.color = tree$edge.color)
+tree_SNV_c_ultra$edge.length <- adjusted.length
+tree_SNV_c_ultra$edge.color <- rep("black", length(tree_SNV_c_ultra$edge.length))
+drivers <- drivers[order(drivers$node),]
+for(j in 1:nrow(drivers)){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree_SNV_c_ultra, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards", edge.color = tree$edge.color)
+tree <- tree_SNV_c_ultra
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards", edge.color = tree$edge.color)
+drivers
+adjusted.length <- rep(NA, nrow(tree_SNV_c_ultra$edge))
+for(j in 1:nrow(tree_SNV_c_ultra$edge)){
+adjusted.length[j] <- sum(muts$node==tree_SNV_c_ultra$edge[j,2])
+}
+tree_SNV_c_ultra$edge.length <- adjusted.length
+tree_SNV_c_ultra$edge.color <- rep("black", length(tree_SNV_c_ultra$edge.length))
+drivers <- drivers[order(drivers$node),]
+for(j in 1:nrow(drivers)){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree_SNV_c_ultra, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+tree <- tree_SNV_c_ultra
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards", edge.color = tree$edge.color)
+drivers
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[j,]$node]
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[1,]$node]
+drivers <- drivers[order(drivers$node),]
+drivers
+head(tree$edge)
+?Ancestors
+root(tree)
+tree$Nnode
+drivers$node[drivers$node > tree$Nnode]
+drivers <- drivers[c(which(drivers$node >= tree$Nnode), which(drivers$node < tree$Nnode), ][c(order(drivers$node[drivers$node >= tree$Nnode]), order(drivers$node[drivers$node < tree$Nnode])),]
+drivers <- drivers[c(which(drivers$node >= tree$Nnode), which(drivers$node < tree$Nnode)), ][
+c(order(drivers$node[drivers$node >= tree$Nnode]), order(drivers$node[drivers$node < tree$Nnode])),]
+drivers
+## subset the drivers reported in Fabre et al.:
+drivers <- muts[muts$coding_change_CHgeneInModel=="Coding change" & muts$Gene %in% c("SF3B1", "CBL", "TET2", "CTCF", "U2AF1", "SRSF2", "PPM1D", "TP53"),]
+drivers[c(which(drivers$node >= tree$Nnode), which(drivers$node < tree$Nnode)), ]
+c(order(drivers$node[drivers$node >= tree$Nnode]), order(drivers$node[drivers$node < tree$Nnode])),]
+# order drivers by hierarchy
+drivers <- drivers[c(which(drivers$node >= tree$Nnode)[order(drivers$node[drivers$node >= tree$Nnode])],
+which(drivers$node < tree$Nnode)[order(drivers$node[drivers$node < tree$Nnode])]), ]
+drivers
+for(j in 1:nrow(drivers)){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree_SNV_c_ultra, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards", edge.color = tree$edge.color)
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[j,]$node]
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[2,]$node]
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[3,]$node]
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[1,]$node]
+getDescendants(tree_SNV_c_ultra, node = drivers[2,]$node)
+tree_SNV_c_ultra$edge.length <- adjusted.length
+tree_SNV_c_ultra$edge.color <- rep("black", length(tree_SNV_c_ultra$edge.length))
+# order drivers by hierarchy
+drivers <- drivers[c(which(drivers$node >= tree$Nnode)[order(drivers$node[drivers$node >= tree$Nnode])],
+which(drivers$node < tree$Nnode)[order(drivers$node[drivers$node < tree$Nnode])]), ]
+for(j in 1:nrow(drivers)){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == drivers[j,]$node] <- driver.colors[drivers[j,]$Gene]
+children <- getDescendants(tree_SNV_c_ultra, node = drivers[j,]$node) ## also color downstream of the node
+for(k in children){
+tree_SNV_c_ultra$edge.color[tree$edge[,2] == k] <- driver.colors[drivers[j,]$Gene]
+}
+}
+tree <- tree_SNV_c_ultra
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards", edge.color = tree$edge.color)
+i
+pdf(paste0("./Nextcloud/Hematopoiesis/Blood_oxford/Mutation_analysis/Fabre_et_al/", i, "/Trees.pdf"),
+width=6, height = 6)
+plot.phylo(tree, use.edge.length = TRUE, show.tip.label = F, direction = "downwards", edge.color = tree$edge.color)
+axisPhylo(side=4, backward = F)
+# ## cut the tree at 100 variants
+#
+# cut.tree <- cutPhylo(tree, age = max(node.depth.edgelength(tree))-50)
+#
+# plot(cut.tree, show.tip.label=F, direction="downwards")
+dev.off()
+data.path <- "Desktop/"
+############################################################################################################
+############define wd
+library(openxlsx)
+library(ggplot2)
+###### ####### ####### ####### ####### ####### ####### #######
+###### load patient characteristics (dates are counted in days after 1.1.1900)
+patient.data<-read.xlsx(paste(data.path, "K27M_FHVs_Elispots_for_clinical_paper.xlsx", sep="/"), sheet = 1, rowNames = F)
+View(patient.data)
+library(ggplot2)
+library(tidyr)
+# Convert MOG and H3 columns to numeric, replacing any non-numeric values with NA
+patient.data <- patient.data %>%
+mutate(across(starts_with("MOG") | starts_with("H3"), ~as.numeric(.)))
+# Reshape the data from wide to long format
+patient.data_long <- patient.data %>%
+pivot_longer(cols = starts_with("MOG") | starts_with("H3"),
+names_to = c("antigen", ".value"),
+names_pattern = "(.*)([0-9])") %>%
+mutate(antigen = ifelse(antigen == "H3-", "H3-wt", antigen)) %>%
+drop_na()
+#use reshape2
+library(reshape2)
+patient.data_long2 <- patient.data_long %>%
+pivot_longer(cols = starts_with("1") | starts_with("2") | starts_with("3"),
+names_to = c("Replicate"))
+patient.data_long2$antigen<-factor(patient.data_long2$antigen, levels = c("MOG","H3-wt","H3-mut"))
+patient.data_long2$Timepoint<-factor(patient.data_long2$Timepoint,
+levels = c("BL", ))
+# Create the bar plot
+ggplot(patient.data_long2, aes(x = Timepoint, y = value, fill = antigen)) +
+stat_summary(
+fun = "mean",
+fun.min = function(x) mean(x) - sd(x),
+fun.max = function(x) mean(x) + sd(x), geom="errorbar",
+position = position_dodge(width=0.75), width=0.2)+
+geom_bar(stat = "summary", position = position_dodge()) +
+geom_point(position = position_dodge(width = 0.75)) +
+labs(x = "Timepoint", y = "Response (SFC/10^6 PBMCs)", fill = "Antigen") +
+theme_classic()
+library(dplyr)
+# Convert MOG and H3 columns to numeric, replacing any non-numeric values with NA
+patient.data <- patient.data %>%
+mutate(across(starts_with("MOG") | starts_with("H3"), ~as.numeric(.)))
+# Reshape the data from wide to long format
+patient.data_long <- patient.data %>%
+pivot_longer(cols = starts_with("MOG") | starts_with("H3"),
+names_to = c("antigen", ".value"),
+names_pattern = "(.*)([0-9])") %>%
+mutate(antigen = ifelse(antigen == "H3-", "H3-wt", antigen)) %>%
+drop_na()
+#use reshape2
+library(reshape2)
+patient.data_long2 <- patient.data_long %>%
+pivot_longer(cols = starts_with("1") | starts_with("2") | starts_with("3"),
+names_to = c("Replicate"))
+patient.data_long2$antigen<-factor(patient.data_long2$antigen, levels = c("MOG","H3-wt","H3-mut"))
+patient.data_long2$Timepoint<-factor(patient.data_long2$Timepoint,
+levels = c("BL", ))
+# Create the bar plot
+ggplot(patient.data_long2, aes(x = Timepoint, y = value, fill = antigen)) +
+stat_summary(
+fun = "mean",
+fun.min = function(x) mean(x) - sd(x),
+fun.max = function(x) mean(x) + sd(x), geom="errorbar",
+position = position_dodge(width=0.75), width=0.2)+
+geom_bar(stat = "summary", position = position_dodge()) +
+geom_point(position = position_dodge(width = 0.75)) +
+labs(x = "Timepoint", y = "Response (SFC/10^6 PBMCs)", fill = "Antigen") +
+theme_classic()
+devtools::install_github("helske/changer")
+devtools::install_github("helske/changer", auth_token = "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")
+setwd("/N")
+setwd("Nextcloud/Hematopoiesis/Blood_oxford/RScripts/Drift_and_selection/")

@@ -311,7 +311,7 @@ mutations.during.steady.state <- function(lambda, N, mu, n.min, t.end){
 #' @param lambda.ss proliferation and loss rate during homeostasis
 #' @param t.end end point (starting from homeostasis)
 #' @param b minimal clone size of interest. Number or vector. 
-#' @param accuracy.a step size in which mutations accumulated during expansion are evaluated (evaluation runs between 5 and 100%); defaults to 5%
+#' @param accuracy.a step size in which mutations accumulated during expansion are evaluated (evaluation runs between 5 and 100\%); defaults to 5\%
 #' @return This function returns the approximate number of mutations in clones of at least b cells, by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations. 
 #' @export
 
@@ -483,7 +483,7 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
 #' @param t.s time point at which selective advantage is acquired.
 #' @param s selective advantage
 #' @param b minimal clone size of interest. Number or vector. 
-#' @param accuracy.a step size in which mutations accumulated during expansion are evaluated between 5 and 100%; defaults to 5%
+#' @param accuracy.a step size in which mutations accumulated during expansion are evaluated between 5 and 100\%; defaults to 5\%
 #' @param min.clone.size the lower detection limit for selected clones
 #' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least b cells
 #' @export

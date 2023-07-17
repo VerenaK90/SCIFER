@@ -10,4 +10,4 @@ Authors@R:
 Description: Package to compute neutral mutation accumulation during drift and selection.
 License: `use_mit_license()`
 Encoding: UTF-8
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3

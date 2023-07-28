@@ -392,7 +392,7 @@ mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b,
   }else if(phase=="early"){
     return(mutations.from.expansion)
   }else if(phase=="homeostasis"){
-    return(mutations.from.expansion)
+    return(mutations.from.steady.state)
   }
   
 }

@@ -4,12 +4,13 @@
 #' @param info Which information is to be retrieved? Possible values are "readcounts", "depth", "VAF", "AA_change", "cDNA_change", "Exon", "VAF.control", "depth.control", "Gene", "annovar_function", "exonic_function". Defaults to "readcounts".
 #' @param type Is the VCF file reporting snvs or indels? Possible values are "snvs" and "indel". Defaults to "snvs".
 #' @param mutationcaller which mutation caller was used to generate the vcf-files? Defaults to "Strelka".
+#' @param tumor.id The name of the tumor sample
 #' @return purity and ploidy
 #' @export
 
 
 Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationcaller="Strelka", tumor.col.mutect=10,
-                                  normal.col.mutect=11, sample.col.mpileup=NA){
+                                  normal.col.mutect=11, sample.col.mpileup=NA, tumor.id=NULL){
   
   if(length(vcf$vcf)==0){
     vcf <- list(vcf=vcf)
@@ -332,7 +333,8 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
         readcounts <- t(sapply(vcf$vcf[,sample.col.mpileup], function(x){
           x <- strsplit(x, split=":")[[1]]
           x <- x[length(x)]
-          x <- as.numeric(strsplit(x, split=",")[[1]][c(1,2)])
+          x <- as.numeric(strsplit(x, split=",")[[1]])
+          x <- c(x[1], max(x[c(2:length(x))]))
           x
         }))
         rownames(readcounts) <- paste(vcf$vcf$GENE, vcf$vcf$POS, sep=".")
@@ -344,7 +346,8 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
         depth <- sapply(vcf$vcf[,sample.col.mpileup], function(x){
           x <- strsplit(x, split=":")[[1]]
           x <- x[length(x)]
-          x <- as.numeric(strsplit(x, split=",")[[1]][c(1,2)])
+          x <- as.numeric(strsplit(x, split=",")[[1]])
+          x <- c(x[1], max(x[c(2:length(x))]))
           sum(x)
         })
         
@@ -354,7 +357,8 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
         vaf <- sapply(vcf$vcf[,sample.col.mpileup], function(x){
           x <- strsplit(x, split=":")[[1]]
           x <- x[length(x)]
-          x <- as.numeric(strsplit(x, split=",")[[1]][c(1,2)])
+          x <- as.numeric(strsplit(x, split=",")[[1]])
+          x <- c(x[1], max(x[c(2:length(x))]))
           x[2]/sum(x)
         })
         vaf <- unname(vaf)
@@ -390,6 +394,94 @@ Extract.info.from.vcf <- function(vcf, info="readcounts", type="snvs", mutationc
         })
         return(aa_change)
       }
+    }
+  }else if(mutationcaller=="Manta"){
+    vcf$vcf <- as.data.frame(vcf$vcf)
+    if(info=="svtype"){
+      svtype <- sapply(vcf$vcf$INFO, function(x){
+        x <- strsplit(x, split="SVTYPE=")[[1]][2]
+        x <- strsplit(x, split=";")[[1]][1]
+        x
+      })
+      return(svtype)
+    }
+    if(info=="readcounts"){
+      readcounts <- t(sapply(vcf$vcf[,tumor.id], function(x){
+        
+        x <- strsplit(x, split=":")[[1]]
+        ref <- sum(sapply(x, function(y){
+          as.numeric(strsplit(y, split=",")[[1]][1])
+        }))
+        alt <- sum(sapply(x, function(y){
+          as.numeric(strsplit(y, split=",")[[1]][2])
+        }))
+        
+        return(c(as.numeric(ref),as.numeric(alt)))
+      }))
+      colnames(readcounts) <- c("REF", "ALT")
+      
+      return(readcounts)
+    }
+    if(info=="varCounts"){
+      alt <- sapply(vcf$vcf[,tumor.id], function(x){
+        
+        x <- strsplit(x, split=":")[[1]]
+        
+        alt <- sum(sapply(x, function(y){
+          as.numeric(strsplit(y, split=",")[[1]][2])
+        }))
+        
+        return(as.numeric(alt))
+      })
+      
+      return(alt)
+    }
+    if(info=="depth"){
+      depth <- sapply(vcf$vcf[,tumor.id], function(x){
+        
+        x <- strsplit(x, split=":")[[1]]
+        
+        depth <- sum(sapply(x, function(y){
+          as.numeric(strsplit(y, split=",")[[1]])
+        }))
+        
+        return(as.numeric(depth))
+      })
+      
+      return(depth)
+    }
+    if(info=="VAF"){
+      vaf <-  sapply(vcf$vcf[,tumor.id], function(x){
+        
+        x <- strsplit(x, split=":")[[1]]
+        ref <- sum(sapply(x, function(y){
+          as.numeric(strsplit(y, split=",")[[1]][1])
+        }))
+        alt <- sum(sapply(x, function(y){
+          as.numeric(strsplit(y, split=",")[[1]][2])
+        }))
+        
+        return(as.numeric(alt)/((as.numeric(ref)+as.numeric(alt))))
+      })
+      return(vaf)
+    }
+    if(info=="End"){
+      
+      end <- sapply(vcf$vcf$INFO, function(x){
+        x <- as.character(x)
+        x <- strsplit(x, split="END=")[[1]][2]
+        as.numeric(strsplit(x, split=";")[[1]][1])
+      })
+      return(end)
+    }
+    if(info=="SomaticScore"){
+      
+      end <- sapply(vcf$vcf$INFO, function(x){
+        x <- as.character(x)
+        x <- strsplit(x, split="SOMATICSCORE=")[[1]][2]
+        as.numeric(strsplit(x, split=";")[[1]][1])
+      })
+      return(end)
     }
   }
   

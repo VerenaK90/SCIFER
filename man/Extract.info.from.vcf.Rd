@@ -11,7 +11,8 @@ Extract.info.from.vcf(
   mutationcaller = "Strelka",
   tumor.col.mutect = 10,
   normal.col.mutect = 11,
-  sample.col.mpileup = NA
+  sample.col.mpileup = NA,
+  tumor.id = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ Extract.info.from.vcf(
 \item{type}{Is the VCF file reporting snvs or indels? Possible values are "snvs" and "indel". Defaults to "snvs".}
 
 \item{mutationcaller}{which mutation caller was used to generate the vcf-files? Defaults to "Strelka".}
+
+\item{tumor.id}{The name of the tumor sample}
 }
 \value{
 purity and ploidy

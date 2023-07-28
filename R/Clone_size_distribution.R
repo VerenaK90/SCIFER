@@ -312,11 +312,12 @@ mutations.during.steady.state <- function(lambda, N, mu, n.min, t.end){
 #' @param t.end end point (starting from homeostasis)
 #' @param b minimal clone size of interest. Number or vector. 
 #' @param accuracy.a step size in which mutations accumulated during expansion are evaluated (evaluation runs between 5 and 100\%); defaults to 5\%
+#' @param phase return variants from "both" phases, or from "expansion" or "homeostasis" only
 #' @return This function returns the approximate number of mutations in clones of at least b cells, by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations. 
 #' @export
 
 
-mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = 0.05){
+mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = 0.05, phase = "both"){
 
   ## Compute the VAF distribution after expansion in discretized intervals (a). Sample more densely for large as. 
   a <- 10^seq(0, log10(N)-1, 0.05)
@@ -386,7 +387,14 @@ mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b,
   
   mutations.from.steady.state <- sapply(b, function(b){mutations.during.steady.state(lambda = lambda.ss, N = N, mu = mu, n.min = b, t.end = t.end)})
   
-  mutations.from.steady.state + mutations.from.expansion
+  if(phase=="both"){
+    return(mutations.from.steady.state + mutations.from.expansion)
+  }else if(phase=="early"){
+    return(mutations.from.expansion)
+  }else if(phase=="homeostasis"){
+    return(mutations.from.expansion)
+  }
+  
 }
 
 

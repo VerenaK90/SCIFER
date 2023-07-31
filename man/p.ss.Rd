@@ -9,17 +9,18 @@ p.ss(lambda, a, b, t)
 \arguments{
 \item{lambda}{proliferation rate}
 
-\item{a}{clone size at t=0}
+\item{a}{clone size at \code{t=0}}
 
-\item{b}{clone size at t=t; single value or vector}
+\item{b}{clone size at \code{t=t}; single value or vector}
 
 \item{t}{time}
-
-\item{mode}{either 'density' if density distribution is to be returned or 'cumulative'.}
 }
 \value{
-The probability to grow from a to b within t
+The probability to grow from \code{a} to \code{b} within \code{t}
 }
 \description{
-Function to compute the probabilty to grow from a to b in a critical b-d process using automatic switching between exact and approximate solution. Cutoff criterion: a*p*(1-p)>=9 and b*p*(1-p)>=9
+Function to compute the probability to grow from \code{a} to \code{b} in a critical b-d process using automatic switching between exact and approximate solution.
+}
+\details{
+The function automatically switches between the exact solution and an approximation with a parametrized \eqn{\Gamma}-distribution at a cutoff criterion of \eqn{a*p*(1-p)>=9 \& b*p*(1-p)>=9}
 }

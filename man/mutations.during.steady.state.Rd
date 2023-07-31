@@ -18,7 +18,7 @@ mutations.during.steady.state(lambda, N, mu, n.min, t.end)
 \item{t.end}{time at end point}
 }
 \value{
-The number of mutations that were acquired during steady state and are present in at least n.min cells.
+The number of mutations that were acquired during steady state and are present in at least \code{n.min} cells.
 }
 \description{
 Neutral mutation accumulation during steady state.

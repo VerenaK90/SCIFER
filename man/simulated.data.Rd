@@ -16,7 +16,7 @@ simulated.data(
 )
 }
 \arguments{
-\item{seqtype}{string, specifying the sequencing method. Must be either 'bulk' or 'sc'}
+\item{seqtype}{string, specifying the sequencing method. Must be either "bulk" or "sc"}
 
 \item{clone.sizes}{vector of clone sizes at which cumulative mutation counts were measured}
 
@@ -24,9 +24,9 @@ simulated.data(
 
 \item{depth}{sequencing depth, only specify for bulk WGS}
 
-\item{ncells}{the number of sequenced cells, only specify if seqtype="sc"}
+\item{ncells}{the number of sequenced cells, only specify if \code{seqtype=="sc"}.}
 
-\item{sensitivity}{logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf}
+\item{sensitivity}{logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for \code{false.negative.per.vaf}.}
 
 \item{false.negative.per.vaf}{optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise.}
 

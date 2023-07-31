@@ -24,7 +24,7 @@ mutations.noncritical.bd(
 
 \item{mu}{mutation rate per cell division}
 
-\item{n.min}{minimal clone size at t.ss; can be a value or a vector}
+\item{n.min}{minimal clone size at \code{t.end}; can be a value or a vector}
 
 \item{N0}{initial population size}
 
@@ -33,8 +33,17 @@ mutations.noncritical.bd(
 \item{mode}{if "approx" the sum is approximated by integration. If "exact" the sum is exactly computed for clone sizes between 1 and 10 but beyond that also approximated.}
 }
 \value{
-The expected number of mutations present in at least n.min cells at t.ss in an exponentially growing tissue. The function assumes that mutations are continuously acquired at a constant rate.
+The expected number of mutations present in at least \code{n.min} cells at \code{t.end} in an exponentially growing tissue. The function assumes that mutations are continuously acquired at a constant rate.
 }
 \description{
-Expected number of neutral mutations that are present in at least n.min cells at t.ss in an exponentially growing or contracting tissue.
+Expected number of neutral mutations that are present in at least \code{n.min} cells at \code{t.end} in an exponentially growing or contracting tissue.
+}
+\details{
+The expected number of mutations present in at least \code{n.min} cells is computed as \cr
+\eqn{M(n_\mathrm{min})=\sum_{n_\mathrm{min}}^N \mu \lambda \int_0^t e^{(\lambda - \delta)(t-t')} P(1,n_{min},t-t')dt'}, which is approximated to \cr
+\eqn{M(n_\mathrm{min})\approx \mu \lambda \int_0^t e^{(\lambda - \delta)(t-t')} \frac{ P(1,N,t-t') -  P(1,n_\mathrm{min},t-t')}{\log y(t-t')}dt'}, \cr where
+\eqn{y(t) = \frac{\lambda e^{(\lambda - \delta)t} - \lambda}{\lambda e^{(\lambda - \delta)t}-\delta}}, if \code{mode=="approx"} or if \eqn{n_\mathrm{min} \le 10}
+}
+\references{
+Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
 }

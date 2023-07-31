@@ -9,15 +9,18 @@ p.ss.exact(lambda, a, b, t)
 \arguments{
 \item{lambda}{proliferation rate}
 
-\item{a}{clone size at t=0}
+\item{a}{clone size at \code{t=0}}
 
-\item{b}{clone size at t=t}
+\item{b}{clone size at \code{t=t}}
 
 \item{t}{time}
 }
 \value{
-The probability to grow from a to b within t.
+The probability to grow from \code{a} to \code{b} within \code{t}.
 }
 \description{
 Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process.
+}
+\references{
+Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
 }

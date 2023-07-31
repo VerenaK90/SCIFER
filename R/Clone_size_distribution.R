@@ -3,15 +3,16 @@
 #########################################################################################################################################
 
 #' Non-critical clone size distribution (exact).
-#' 
-#' @description Exact probability to grow from a clone of size a to a clone of size b within time t according to a non-critical birth-death process. Exact solution according to Bailey, 1964.
+#'
+#' @description Exact probability to grow from a clone of size "a" to a clone of size "b" within time "t" according to a non-critical birth-death process.
 #'
 #' @param lambda proliferation rate 
 #' @param delta loss rate
 #' @param t time
 #' @param a clone size at t=0
 #' @param b clone size at t=t
-#' @return The probability that a clone of size a grows to size b within t.
+#' @return The probability that a clone of size a grows to size "b" within "t".
+#' @references  Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
 #' @examples
 #' density.a.b.exact(1, 0, 10, 1, 2)
 #' @export
@@ -47,14 +48,19 @@ density.a.b.exact <- function(lambda, delta, t, a, b){
 }
 
 #' Clone size distribution in a noncritical birth-death process (approximate).
-#' @description Probability of a clone of size a to grow to size b within t according to a noncritical linear birth-death process. 
+#' @description Probability of a clone of size "a" to grow to size "b" within "t" according to a noncritical linear birth-death process. 
 #' @param lambda proliferation rate 
 #' @param delta loss rate
 #' @param t time
 #' @param a clone size at t=0
 #' @param b clone size at t=t
-#' @param mode 'density' if density distribution is to be returned , 'cumulative' if cumulative distribution is to be returned. Defaults to 'cumulative'
-#' @param approx Approximation to be used. Defaults to 'highnumbers'; i.e. we want to approximate with a gamma distribution if a and b are large.
+#' @param mode "density" if density distribution is to be returned , "cumulative" if cumulative distribution is to be returned. Defaults to "cumulative"
+#' @param approx Approximation to be used. Defaults to "highnumbers"; i.e. the distribution is approximated with a gamma distribution if `a` and `b` are large.
+#' @details
+#' If `approx="highnumbers"`, the function is approximated with a \eqn{\Gamma}-distribution if `a+b>100` and `mode="density"` or if `a+b>10` and `mode="cumulative"`. The \eqn{\Gamma}-distribution is parametrized with 
+#' \eqn{shape = \mu^2/\sigma, scale = \sigma/\mu}, where
+#' \eqn{\mu = a e^{(\lambda - \delta)t}, \sigma = a \frac{\lambda + \delta}{\lambda - \delta}e^{(\lambda - \delta)t}(e^{(\lambda - \delta)t}-1)}
+#' @references Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
 #' @return The probability of growing from size a to size b within t. The Function switches between the exact solution and an approximate solution according to a parametrized gamma distribution.
 #' @export
 #' 
@@ -100,57 +106,38 @@ p.a.b <- function(lambda, delta, t, a, b, mode="cumulative", approx="highnumbers
 
 #' Mutation accumulation in a growing tissue
 #' 
-#' @description Expected number of neutral mutations that are present in at least n.min cells at t.ss in an exponentially growing or contracting tissue.
+#' @description Expected number of neutral mutations that are present in at least `n.min` cells at `t.end` in an exponentially growing or contracting tissue.
 #' @param lambda proliferation rate 
 #' @param delta loss rate
 #' @param t.end time
 #' @param mu mutation rate per cell division
-#' @param n.min minimal clone size at t.ss; can be a value or a vector
+#' @param n.min minimal clone size at `t.end`; can be a value or a vector
 #' @param N0 initial population size
 #' @param N final population size
 #' @param mode if "approx" the sum is approximated by integration. If "exact" the sum is exactly computed for clone sizes between 1 and 10 but beyond that also approximated.
-#' @return The expected number of mutations present in at least n.min cells at t.ss in an exponentially growing tissue. The function assumes that mutations are continuously acquired at a constant rate.
+#' @details The expected number of mutations present in at least `n.min` cells is computed as \cr
+#' \eqn{M(n_\mathrm{min})=\sum_{n_\mathrm{min}}^N \mu \lambda \int_0^t e^{(\lambda - \delta)(t-t')} P(1,n_{min},t-t')dt'}, which is approximated to \cr
+#' \eqn{M(n_\mathrm{min})\approx \mu \lambda \int_0^t e^{(\lambda - \delta)(t-t')} \frac{ P(1,N,t-t') -  P(1,n_\mathrm{min},t-t')}{\log y(t-t')}dt'}, \cr where
+#' \eqn{y(t) = \frac{\lambda e^{(\lambda - \delta)t} - \lambda}{\lambda e^{(\lambda - \delta)t}-\delta}}, if `mode=="approx"` or if \eqn{n_\mathrm{min} \le 10}
+#' @references  Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
+#' @return The expected number of mutations present in at least `n.min` cells at `t.end` in an exponentially growing tissue. The function assumes that mutations are continuously acquired at a constant rate.
 #' @export
 
 mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N, mode="approx"){
   
-  ## Exact number of mutations present in at least n cells at time t
-  exact.count <- function(t, mu, lambda, delta, n, t.end){
-    sum(sapply(seq(1,n), function(n){
-      integrand <- function(t, mu, lambda, delta, n){
-        mu*lambda*N0*exp((lambda - delta)*t)*(density.a.b.exact(lambda, delta, t.end-t, 1, n)) 
-        
-      }
-      ## total number of mutations acquired during exponential growth that survived:
-      res <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n=n)$value
-      res
-    }))
-  }
-  
-  approx.count <- function(t, mu, lambda, delta, n.min, n.max, t.end){
-    integrand <- function(t, mu, lambda, delta, n.min, n.max){
-      mu*lambda*N0*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.end-t))*(density.a.b.exact(lambda, delta, t.end-t, 1, n.max) - 
-                                                                                 density.a.b.exact(lambda, delta, t.end-t, 1, n.min))
-      
-    }
-    total <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n.min=n.min, n.max=n.max)$value
-    total
-  }
-  
   if(mode=="exact"){
     
-
     res <- sapply(n.min, function(n.min){
       if(n.min <=10){
-        total <- approx.count(t, mu, lambda, delta, n.min=11, n.max=100*max(N,N0), t.end) + exact.count(t, mu, lambda, delta, 10, t.end)
+        total <- .approx.count(t, mu, lambda, delta, n.min=11, n.max=100*max(N,N0), t.end) + .exact.count(t, mu, lambda, delta, 10, t.end)
         if(n.min > 1){
-          res <- total - exact.count(t, mu, lambda, delta, n.min-1, t.end)
+          res <- total - .exact.count(t, mu, lambda, delta, n.min-1, t.end)
         }else{
           res <- total 
         }
         return(res)
       }else{
-        approx.count(t, mu, lambda, delta, n.min=1, n.max=Inf, t.end) - approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end)
+        .approx.count(t, mu, lambda, delta, n.min=1, n.max=Inf, t.end) - .approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end)
       }
       
     })
@@ -161,10 +148,35 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
   ## The sum necessary in order to compute the cumulative distribution, is here replaced by integration.
   sapply(n.min, function(n.min){
     
-    res <- approx.count(t, mu, lambda, delta, n.min=1, n.max=100*max(N0, N), t.end) - approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end) 
+    res <- .approx.count(t, mu, lambda, delta, n.min=1, n.max=100*max(N0, N), t.end) - .approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end) 
     return(res)
   })
   
+}
+
+## Exact number of mutations present in at least n cells at time t
+.exact.count <- function(t, mu, lambda, delta, n, t.end){
+  sum(sapply(seq(1,n), function(n){
+    integrand <- function(t, mu, lambda, delta, n){
+      mu*lambda*N0*exp((lambda - delta)*t)*(density.a.b.exact(lambda, delta, t.end-t, 1, n)) 
+      
+    }
+    ## total number of mutations acquired during exponential growth that survived:
+    res <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n=n)$value
+    res
+  }))
+}
+
+## Approximate number of mutations present in at least n.min cells at time t
+
+.approx.count <- function(t, mu, lambda, delta, n.min, n.max, t.end){
+  integrand <- function(t, mu, lambda, delta, n.min, n.max){
+    mu*lambda*N0*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.end-t))*(density.a.b.exact(lambda, delta, t.end-t, 1, n.max) - 
+                                                                               density.a.b.exact(lambda, delta, t.end-t, 1, n.min))
+    
+  }
+  total <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n.min=n.min, n.max=n.max)$value
+  total
 }
 
 #########################################################################################################################################
@@ -175,15 +187,16 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
 #' 
 #' @description Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process.
 #' @param lambda proliferation rate 
-#' @param a clone size at t=0
-#' @param b clone size at t=t
+#' @param a clone size at `t=0`
+#' @param b clone size at `t=t`
 #' @param t time
-#' @return The probability to grow from a to b within t.
+#' @references  Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
+#' @return The probability to grow from `a` to `b` within `t`.
 #' @export
 
 p.ss.exact <- function(lambda, a, b, t){
   p <- lambda*t/(1+lambda*t)
-
+  
   res <- sapply(1:min(a,b), function(k){
     k/b*dbinom(x = k, size = a, p=1-p)*dbinom(x = k, size = b, p=1-p)
   })
@@ -202,13 +215,17 @@ p.ss.exact <- function(lambda, a, b, t){
 
 #' Clone size distribution of a critical birth-death process (approximate).
 #' 
-#' @description Probabilitly to grow from a clone of size a to a clone of size b within t in a critical birth-death process using a parametrized gamma distribution for approximation.
+#' @description Probabilitly to grow from a clone of size `a` to a clone of size `b` within `t` in a critical birth-death process using a parametrized \eqn{\Gamma}-distribution for approximation.
 #' @param lambda proliferation rate 
-#' @param a clone size at t=0
-#' @param b clone size at t=t
+#' @param a clone size at `t=0`
+#' @param b clone size at `t=t`
 #' @param t time
-#' @param mode either 'density' if density distribution is to be returned or 'cumulative'.
-#' @return The approximate probability to grow from a to b within t.
+#' @param mode either "density" if density distribution is to be returned or "cumulative", defaults to "density".
+#' @references  Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
+#' The function is approximated with a \eqn{\Gamma}-distribution that is parametrized with 
+#' \eqn{shape = \mu^2/\sigma, scale = \sigma/\mu}, where
+#' \eqn{\mu = a, \sigma = 2a \lambda t}
+#' @return The approximate probability to grow from `a` to `b` within `t`.
 #' @export
 
 p.ss.approx <- function(lambda, a, b, t, mode="density"){
@@ -225,13 +242,13 @@ p.ss.approx <- function(lambda, a, b, t, mode="density"){
 }
 
 #' Clone size distribution in a critical b-d process. 
-#' @description Function to compute the probabilty to grow from a to b in a critical b-d process using automatic switching between exact and approximate solution. Cutoff criterion: a*p*(1-p)>=9 and b*p*(1-p)>=9
+#' @description Function to compute the probability to grow from `a` to `b` in a critical b-d process using automatic switching between exact and approximate solution. 
 #' @param lambda proliferation rate 
-#' @param a clone size at t=0
-#' @param b clone size at t=t; single value or vector
+#' @param a clone size at `t=0`
+#' @param b clone size at `t=t`; single value or vector
 #' @param t time
-#' @param mode either 'density' if density distribution is to be returned or 'cumulative'.
-#' @return The probability to grow from a to b within t
+#' @details The function automatically switches between the exact solution and an approximation with a parametrized \eqn{\Gamma}-distribution at a cutoff criterion of \eqn{a*p*(1-p)>=9 \& b*p*(1-p)>=9}
+#' @return The probability to grow from `a` to `b` within `t`
 #' @export
 
 p.ss <- function(lambda, a, b, t){
@@ -266,13 +283,13 @@ p.ss <- function(lambda, a, b, t){
 #' @param mu mutation rate per cell division
 #' @param n.min minimal clone size
 #' @param t.end time at end point
-#' @return The number of mutations that were acquired during steady state and are present in at least n.min cells.
+#' @return The number of mutations that were acquired during steady state and are present in at least `n.min` cells.
 #' @export
 
 mutations.during.steady.state <- function(lambda, N, mu, n.min, t.end){
   
   ## Compute the number of mutations that are present in at least 1 cell and at most n cells
-
+  
   if(t.end==0){
     return(0)
   }
@@ -290,7 +307,7 @@ mutations.during.steady.state <- function(lambda, N, mu, n.min, t.end){
       }
     }
     res
-
+    
   }
   
   ## total number of mutations acquired during exponential growth that survived:
@@ -302,7 +319,7 @@ mutations.during.steady.state <- function(lambda, N, mu, n.min, t.end){
 ####### Supercritical b-d-process followed by critical b-d-process
 #########################################################################################################################################
 
-#' Mutation accumulation during epxonential expansion followed by homeostasis. 
+#' Mutation accumulation during exponential expansion followed by homeostasis. 
 #' 
 #' @param mu mutation rate per cell division
 #' @param N population size
@@ -313,16 +330,16 @@ mutations.during.steady.state <- function(lambda, N, mu, n.min, t.end){
 #' @param b minimal clone size of interest. Number or vector. 
 #' @param accuracy.a step size in which mutations accumulated during expansion are evaluated (evaluation runs between 5 and 100\%); defaults to 5\%
 #' @param phase return variants from "both" phases, or from "expansion" or "homeostasis" only
-#' @return This function returns the approximate number of mutations in clones of at least b cells, by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations. 
+#' @return This function returns the approximate number of mutations in clones of at least `b` cells, by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations. 
 #' @export
 
 
 mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = 0.05, phase = "both"){
-
+  
   ## Compute the VAF distribution after expansion in discretized intervals (a). Sample more densely for large as. 
   a <- 10^seq(0, log10(N)-1, 0.05)
   a <- unique(round(c(a, seq(0.105, 1, accuracy.a)*N)))
-
+  
   ## compute for each interval the expected number of mutations at Tss, the transition point between expansion and homeostasis
   t.ss <- log(N)/(lambda.exp-delta.exp)
   ## cumulative distribution
@@ -342,12 +359,12 @@ mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b,
   
   
   mutations.from.expansion <- sapply(b, function(b){
-
+    
     ## Probability that a mutation present in bin a at t.ss will drift to a clone size larger than b within t.end
     ## Takes the weighted average between left and right side of the bin. Weighted according to the number of mutations present in the bin and the next bin (bin.factor, see above)
     mean.prob.b <- c()
     for(j in 1:length(a)){
-
+      
       bin.factor[is.infinite(bin.factor)] <- 10^8
       bin.factor[is.na(bin.factor)] <- 1
       
@@ -381,7 +398,7 @@ mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b,
     
     mutations.from.expansion <- sum(m.tss*mean.prob.b)
   })
-
+  
   
   ## in addition, need to add new mutations that were acquired during steady state phase
   
@@ -413,7 +430,7 @@ mutational.burden <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b,
 #' @param t.s time point at which selective advantage is acquired.
 #' @param s selective advantage
 #' @param b minimal clone size of interest. Number or vector. 
-#' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least b cells
+#' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least `b` cells.
 #' @export
 
 mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
@@ -423,7 +440,7 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
   
   ## final tissue size
   N <- exp((lambda - delta)*t.end) - exp((lambda - delta)*(t.end - t.s)) + exp((lambda - delta*s)*(t.end - t.s))
-
+  
   ## size of the selected clone at t.end
   sel.size <- exp((lambda - s*delta)*(t.end-t.s))
   
@@ -431,20 +448,20 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
   ## Compute the number of mutations that are present in at least 1 cell and at most n.min cells
   ## The sum necessary in order to compute the cumulative distribution, is here replaced by integration.
   mutations.in.selected.clone.prior.t.s <- sapply(b, function(n.min){
-      integrand <- function(t, mu, lambda, delta, n){
-          p.mut.in.sel <- exp((lambda - delta)*(t.s - t))/exp((lambda - delta)*t.s)
-          if(n==0){
-            p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*(density.a.b.exact(lambda, delta, t.end-t, 1, 0) )
-          }else{
-            p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*((density.a.b.exact(lambda, delta, t.end-t, 1, N*100) -                                                                                                   
-                                                                                                                density.a.b.exact(lambda, delta, t.end-t, 1, n))/log(.beta(lambda, delta, t.end-t)))
-            
-          }
-       }
-      ## total number of mutations acquired during exponential growth that survived:
-      res <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=max(0,n.min-sel.size))$value
-      return(res)
-    })
+    integrand <- function(t, mu, lambda, delta, n){
+      p.mut.in.sel <- exp((lambda - delta)*(t.s - t))/exp((lambda - delta)*t.s)
+      if(n==0){
+        p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*(density.a.b.exact(lambda, delta, t.end-t, 1, 0) )
+      }else{
+        p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*((density.a.b.exact(lambda, delta, t.end-t, 1, N*100) -                                                                                                   
+                                                           density.a.b.exact(lambda, delta, t.end-t, 1, n))/log(.beta(lambda, delta, t.end-t)))
+        
+      }
+    }
+    ## total number of mutations acquired during exponential growth that survived:
+    res <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=max(0,n.min-sel.size))$value
+    return(res)
+  })
   
   mutations.not.in.selected.clone.prior.t.s <- sapply(b, function(n.min){
     integrand <- function(t, mu, lambda, delta, n){
@@ -458,7 +475,7 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
     res <- integrate(integrand, lower=0, upper=t.s, mu=mu, lambda=lambda, delta=delta, n=n.min)$value
     return(res)
   })
-    
+  
   
   
   mutations.before.t.s <- mutations.in.selected.clone.prior.t.s + mutations.not.in.selected.clone.prior.t.s
@@ -466,10 +483,10 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
   
   mutations.from.selected.clone.after.t.s <- sapply(b, function(n.min){
     mutations.noncritical.bd(lambda = lambda, delta = delta *s, t.end = t.end - t.s, 
-                                                                       mu = mu, n.min = n.min, N = sel.size)})
+                             mu = mu, n.min = n.min, N = sel.size)})
   mutations.from.founder.clone.after.t.s <- exp((lambda - delta)*t.s)*sapply(b, function(n.min){
     mutations.noncritical.bd(lambda = lambda, delta = delta, t.end = t.end - t.s, 
-                              mu = mu, n.min = n.min, N = exp((lambda - delta)*(t.end - t.s)), mode="exact")})
+                             mu = mu, n.min = n.min, N = exp((lambda - delta)*(t.end - t.s)), mode="exact")})
   
   
   mutations.before.t.s + mutations.from.selected.clone.after.t.s + mutations.from.founder.clone.after.t.s
@@ -493,7 +510,7 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
 #' @param b minimal clone size of interest. Number or vector. 
 #' @param accuracy.a step size in which mutations accumulated during expansion are evaluated between 5 and 100\%; defaults to 5\%
 #' @param min.clone.size the lower detection limit for selected clones
-#' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least b cells
+#' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least `b` cells.
 #' @export
 
 mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, s, b, accuracy.a = 0.05, min.clone.size = 0.05){
@@ -503,7 +520,7 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   
   ## compute the relative size of the selected clone at t.end
   f.sel <- exp((lambda.ss - s*lambda.ss)*(t.end-t.s))/N
-
+  
   ## in case the selected clone took over, add an offset of the number of mutations in the founder cell to the solution of mutations during steady state (it's again a neutrally expanding clone)
   if(f.sel>1){
     t.ss <- log(N*0.5)/(lambda.ss*(1-s))
@@ -541,7 +558,7 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
     })
   }
   
-  number.of.events <- ode(func=ode.system.competition, times=c(0,t.end-(t.s)), y=c(m=1, Death=0, Div=0), parms=c(lambda=lambda.ss, s=s, N=N))
+  number.of.events <- deSolve::ode(func=ode.system.competition, times=c(0,t.end-(t.s)), y=c(m=1, Death=0, Div=0), parms=c(lambda=lambda.ss, s=s, N=N))
   number.of.deaths.in.founder <- number.of.events[2,"Death"]
   ## function to determine the loss rate in case of exponential decay when requiring a fixed number of death events D.
   fun <- function(lambda, delta, N, t, D){
@@ -560,7 +577,7 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   
   
   ## Next, compute the mutation distribution at t.s, i.e. the time point at which the driver mutation is acquired. Do this in a discretized way, as before. 
-
+  
   
   if((log10(N)-1)>2){
     a <- c(1, 10, 25, 50, 75, 10^seq(2, log10(N)-1, 0.05))
@@ -583,7 +600,7 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   
   ## the clone size at the upper border of the bin
   upper.a <- c(a[-1], 2*N)
-
+  
   ## take the average from the lower and upper border
   mutations.at.t.end <- sapply(b, function(b){
     ## if b is bigger than the selected clone, it may contain mutations present in the founder cell population only (probability 1-a/N)
@@ -596,10 +613,10 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
         prob.sel.upper <- x[2]/N
         (x[3]* (prob.sel*(1-p.a.b(a=x[1]-1, b=round(b-f.sel*N), lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations (-1 because 1 cell is the selected clone)
                   (1-prob.sel)*(1-p.a.b(a=x[1], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s))) +## mutation only in founder cell 
-           
+            
             prob.sel.upper*(1-p.a.b(a=x[2]-1, b=round(b-f.sel*N), lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations
-           (1-prob.sel.upper)*(1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) ## mutation only in founder cell 
-         
+            (1-prob.sel.upper)*(1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) ## mutation only in founder cell 
+          
         )/(x[3] + 1)
         
       })
@@ -614,18 +631,18 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
         
         
         p <- (x[3]* (prob.sel*(1-p.a.b(a=x[1]-1, b=0, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations (-1 because 1 cel is the selected clone)
-                                 (1-prob.sel)*(1-p.a.b(a=x[1], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s))) +## mutation only in founder cell 
-                          
-                          prob.sel.upper*(1-p.a.b(a=x[2]-1, b=0, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations
-                          (1-prob.sel.upper)*(1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) ## mutation only in founder cell 
-                        
+                       (1-prob.sel)*(1-p.a.b(a=x[1], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s))) +## mutation only in founder cell 
+                
+                prob.sel.upper*(1-p.a.b(a=x[2]-1, b=0, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) + ## mutation in both populations
+                (1-prob.sel.upper)*(1-p.a.b(a=x[2], b=b, lambda=lambda.ss, delta=delta.founder, t=t.end-t.s)) ## mutation only in founder cell 
+              
         )/(x[3] + 1)
-
+        
         return(p)
         
-        })
-        
-        res <- sum(mutations.at.t.s*weighted.average)
+      })
+      
+      res <- sum(mutations.at.t.s*weighted.average)
     }
     res
   })
@@ -652,10 +669,9 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
 #' @param clone.sizes vector of clone sizes at which cumulative mutation counts were measured
 #' @param expected.mutations expected number of mutations at each clone size
 #' @param depth sequencing depth
-#' @param sensitivity logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf
-#' @param false.negative.per.vaf optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise. Must be provided if sensitivity=T
+#' @param sensitivity logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for `false.negative.per.vaf`.
+#' @param false.negative.per.vaf optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise. Must be provided if `sensitivity=T`
 #' @return A vector of simulated VAFs
-#' @export
 
 .simulated.wgs.data <- function(clone.sizes, expected.mutations, depth=90, sensitivity=T, false.negative.per.vaf, min.vaf=0.05){
   
@@ -714,7 +730,6 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
 #' @param expected.mutations expected number of mutations at each clone size
 #' @param ncells sequenced cells
 #' @return A vector of simulated VAFs
-#' @export
 
 .simulated.scWGS.data <- function(clone.sizes, expected.mutations, ncells=100, min.vaf=0.05){
   
@@ -737,14 +752,14 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
 
 #' Wrapper function to simulate sequencing either by bulk WGS or by scWGS
 #' 
-#' @param seqtype string, specifying the sequencing method. Must be either 'bulk' or 'sc'
+#' @param seqtype string, specifying the sequencing method. Must be either "bulk" or "sc"
 #' @param clone.sizes vector of clone sizes at which cumulative mutation counts were measured
 #' @param expected.mutations expected number of mutations at each clone size
 #' @param depth sequencing depth, only specify for bulk WGS
 #' @param false.negative.per.vaf optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise.
-#' @param sensitivity logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf
+#' @param sensitivity logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for `false.negative.per.vaf`.
 #' @param min.vaf the minimal VAF to return
-#' @param ncells the number of sequenced cells, only specify if seqtype="sc"
+#' @param ncells the number of sequenced cells, only specify if `seqtype=="sc"`.
 #' @return A vector of simulated VAFs
 #' @export
 

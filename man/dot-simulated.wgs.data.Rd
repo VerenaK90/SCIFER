@@ -20,9 +20,9 @@
 
 \item{depth}{sequencing depth}
 
-\item{sensitivity}{logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for false.negative.per.vaf}
+\item{sensitivity}{logical, if sensitivity of sequencing method should be taken into account in addition to binomial noise. Requires a specification for \code{false.negative.per.vaf}.}
 
-\item{false.negative.per.vaf}{optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise. Must be provided if sensitivity=T}
+\item{false.negative.per.vaf}{optional, a matrix with columns corresponding to the measured VAFs and rows corresponding to individual measurements of the false negative rate at this VAF in addition to binomial noise. Must be provided if \code{sensitivity=T}}
 }
 \value{
 A vector of simulated VAFs

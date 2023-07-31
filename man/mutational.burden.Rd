@@ -2,7 +2,7 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{mutational.burden}
 \alias{mutational.burden}
-\title{Mutation accumulation during epxonential expansion followed by homeostasis.}
+\title{Mutation accumulation during exponential expansion followed by homeostasis.}
 \usage{
 mutational.burden(
   mu,
@@ -31,13 +31,13 @@ mutational.burden(
 
 \item{b}{minimal clone size of interest. Number or vector.}
 
-\item{accuracy.a}{step size in which mutations accumulated during expansion are evaluated (evaluation runs between 5 and 100\%); defaults to 5\%}
+\item{accuracy.a}{step size in which mutations accumulated during expansion are evaluated (evaluation runs between 5 and 100\\%); defaults to 5\\%}
 
 \item{phase}{return variants from "both" phases, or from "expansion" or "homeostasis" only}
 }
 \value{
-This function returns the approximate number of mutations in clones of at least b cells, by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations.
+This function returns the approximate number of mutations in clones of at least \code{b} cells, by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations.
 }
 \description{
-Mutation accumulation during epxonential expansion followed by homeostasis.
+Mutation accumulation during exponential expansion followed by homeostasis.
 }

@@ -24,7 +24,7 @@ mutational.burden.selection.expansion(mu, lambda, delta, s, t.s, t.end, b)
 \item{N}{population size}
 }
 \value{
-This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least b cells
+This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario where a subpopulation is under positive selection. Returns the number of mutations present in at least \code{b} cells.
 }
 \description{
 Mutation accumulation during exponential expansion with clonal selection.

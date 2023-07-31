@@ -18,11 +18,14 @@
 \item{b}{clone size at t=t}
 }
 \value{
-The probability that a clone of size a grows to size b within t.
+The probability that a clone of size a grows to size "b" within "t".
 }
 \description{
-Exact probability to grow from a clone of size a to a clone of size b within time t according to a non-critical birth-death process. Exact solution according to Bailey, 1964.
+Exact probability to grow from a clone of size "a" to a clone of size "b" within time "t" according to a non-critical birth-death process.
 }
 \examples{
 density.a.b.exact(1, 0, 10, 1, 2)
+}
+\references{
+Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
 }

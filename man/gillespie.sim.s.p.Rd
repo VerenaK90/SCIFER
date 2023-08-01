@@ -47,7 +47,7 @@ gillespie.sim.s.p(
 
 \item{mut.rate.D}{integer; driver mutation rate per cell division}
 
-\item{s.shape}{shape parameter of the gamma distribution from which the selective advantage of a new driver is drawn}
+\item{s.shape}{shape parameter of the gamma distribution from which the selective advantage of a new driver is drawn. If the function is run with \code{driver.mode="fixed"}, the selective advantage is not randomyl drawn but computed as s.shape/d.rate.}
 
 \item{s.rate}{rate parameter of the gamma distribution from which the selective advantage of a new driver is drawn}
 

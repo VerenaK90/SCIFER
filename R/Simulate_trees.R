@@ -227,11 +227,12 @@
 #' @param driver.mode string; "fixed_time" if driver is acquired at a fixed time point, "random", if driver is randomly acquired governed by the parameters `mu_D` and `s`
 #' @param t.driver integer, the time point at which the driver is acquired if mode is "fixed_time"
 #' @param mut.rate.D integer; driver mutation rate per cell division
-#' @param s.shape shape parameter of the gamma distribution from which the selective advantage of a new driver is drawn
+#' @param s.shape shape parameter of the gamma distribution from which the selective advantage of a new driver is drawn. If the function is run with `driver.mode="fixed"`, the selective advantage is not randomyl drawn but computed as s.shape/d.rate.
 #' @param s.rate rate parameter of the gamma distribution from which the selective advantage of a new driver is drawn
 #' @param tau tau leaping parameter: how many steps should be merged during homeostasis? Defaults to 1, no leaping.
 #' @param report.at.f frequency of a selected clone at which the simulation should be stopped. Defaults to NA - don't stop at a certain frequency. 
 #' @return a list of state.lists at the desired time samples
+#' @export
 
 gillespie.sim.s.p <- function(parms.exp, parms.steady, time.max=50, time.samples=c(0, 5, 25, 50), N=1000, NP=10000, report.at.f = NA,
                               mut.rate = 3, mutation.mode="Binomial", driver.mode="random", t.driver = NA, mut.rate.D = 0, s.shape = 1.5, s.rate = 35, tau = 1){

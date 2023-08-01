@@ -19,7 +19,7 @@ Extract.info.from.vcf(
 \item{vcf}{Mutation information in VCF format represented as a list (as returned by read.vcf from package bedR).}
 
 \item{info}{Variant information to be retrieved. Possible values are
-\itemize{
+\describe{
 \item{\code{readcounts}}{ returns the number of reference and variant reads for each variant position.}
 \item{\code{varCounts}}{ the number of variant reads (if mutationcaller is 'Strelka' or 'Manta').}
 \item{\code{depth}}{ returns the sequencing depths for each variant position.}

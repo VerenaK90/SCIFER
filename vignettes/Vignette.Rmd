@@ -1,0 +1,478 @@
+---
+title: "Simulation and parameter estimation of mutation accumulation with FLORENCE"
+author: "Verena Körber"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Simulation and parameter estimation of mutation accumulation with FLORENCE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette gives an overview on function modalities provided in the R package FLORENCE. FLORENCE predicts variant accumulation in growing and homeostatic tissues that evolve neutrally or via clonal selection. Expected site frequency spectra can be assessed with analytical expressions or with stochastic simulations of variant accumulation. We will first compare the results of the analytical expressions and stochastic simulations. Second, we will introduce how FLORENCE can be used for parameter estimation from real data.  
+
+## Predict VAF distributions in neutrally evolving tissues with FLORENCE
+
+Let's begin by loading FLORENCE and predicting the VAF distribution of a tissue sustained by 1,000 cells upon exponential expansion. We assume that there is no cell death during expansion and that on average two mutations are acquired per division (amounting to 1 per daughter cell), and focus on VAFs between 1% and 100% - roughly covering the range that can be experimentally assessed.
+
+```{r}
+library(FLORENCE)
+mu <- 2 # mutation per division
+lambda <- 1 # division rate
+delta <- 0 # death rate
+N <- 1000 # final cell count
+vafs.of.interest <- seq(0.01, 1, 0.01) # analyze the cumulative VAF distribution in 1% bins running between 1% and 100%
+clone.sizes.of.interest <- 2*vafs.of.interest*N # in a diploid genome, the VAF is 50% of the clone size.
+```
+
+The function `mutations.noncritical.bd` computes the expected cumulative number of variants in a clone of size `b`. We plot the cumulative distribution against 1/VAF and observe a linear increase. This is a well-known result from population genetics (c.f. e.g., Williams et al., Nature Genetics, 2016). 
+```{r}
+SFS.neutral.expansion <- mutations.noncritical.bd(lambda = lambda, delta = delta, mu = mu, n.min = clone.sizes.of.interest, N0 = 1, N = N, t.end = log(N)/(lambda-delta))
+
+plot(1/vafs.of.interest, SFS.neutral.expansion, xlab="VAF", ylab="Cumulative number of variants", type="l", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.01"))
+```
+How does the site frequency spectrum change if the tissue now enters a phase of homeostasis? To assess this, we evaluate the VAF distribution after 10 years of tissue homeostasis, during which stem cells divide at a rate of once a year. The function `mutational.burden` allows to predict the SFS in homeostatic tissues analytically. 
+
+```{r}
+mu <- 2 # mutation per division
+lambda.exp <- 1 # division rate during expansion
+delta.exp <- 0 # death rate during expansion
+N <- 1000 # cell count during homeostasis
+lambda.ss <- 1 # division rate during homeostasis
+t.end <- 10 # time of interest
+
+SFS.neutral.homeostasis <- mutational.burden(lambda.exp = lambda, delta.exp = delta, mu = mu, b = clone.sizes.of.interest, N = N, lambda.ss = lambda.ss, t.end = t.end)
+
+plot(1/vafs.of.interest, SFS.neutral.homeostasis, xlab="1/VAF", ylab="Cumulative number of variants", type="l", col="red")
+lines(1/vafs.of.interest, SFS.neutral.expansion, xlab="1/VAF", ylab="Cumulative number of variants", type="l")
+legend("topleft", lty=c(1,1), col=c("red", "black"), legend=c("Homeoastasis", "Expansion"), cex = 0.5)
+```
+
+We note that the linear increase in cumulative variants gets lost during tissue homeostasis. Due to neutral drift, the cumulative distribution of variants now bends upwards at small VAFs. 
+
+## Simulate VAF distributions in neutrally evolving tissues with FLORENCE
+
+Until now we have used analytical expressions for the average SFS. Now, we will compare our results to stochastic simulations, employing the function `gillespie.sim.s.p` provided by FLORENCE. `gillespie.sim.s.p` allows not only the simulation of stem cell dynamics, but also of progenitor cells. For now, we focus on stem cell dynamics only, hence setting the progenitor parameters (`lambda.p`and `delta.p`) to zero. 
+
+```{r}
+set.seed(132342423)
+N = 1000 # 1000 stem cells
+NP = 0 # no progenitor cells
+mut.rate = 1 # 1 variants per daughter cell, amounting to 2 per division
+time.max = 10 # 10 years
+time.samples = c(0, 10) # report after expansion and at 1 year of life
+mutation.mode="Binomial"
+mut.rate.D = 0 # no driver mutations
+s.shape = 0# no driver mutations
+s.rate = 0# no driver mutations
+parms.exp=c(lambda.s=1, delta.s=0, lambda.p=0, delta.p=0, alpha.s=0) # parameters during initial expansion
+parms.steady=c(lambda.s=1, delta.s=1, alpha.s=0, lambda.p=0, delta.p=0) # parameters during homeostasis. 
+
+sim.trees.neutral = gillespie.sim.s.p(parms.exp = parms.exp, parms.steady = parms.steady, time.max = time.max, time.samples = time.samples, N = N,
+                         NP = NP, mut.rate = mut.rate, mutation.mode = mutation.mode, mut.rate.D = mut.rate.D, s.shape = s.shape, s.rate = s.rate)
+
+```
+
+Let's first have a look at the phylogenetic trees: 
+```{r}
+ape::plot.phylo(sim.trees.neutral[[1]], main="Tree after expansion", show.tip.label = F)
+ape::plot.phylo(sim.trees.neutral[[2]], main="Tree after 10 years of homeostasis", show.tip.label = F)
+```
+During homeostasis, additional cell divisions render the tree longer and denser. We are interested in their effect on the site frequency spectrum. To this end, we compute the VAFs in these trees, using the function `get_vaf_from_tree`. 
+```{r}
+SFS.sim <- lapply(sim.trees.neutral, function(tree){
+  vafs <- get_vaf_from_tree(tree)
+  sapply(vafs.of.interest, function(x){
+    sum(vafs >= x)
+  })
+})
+```
+
+When comparing the stochastically simulated VAFS to the analytical prediction, we find a good agreement: 
+```{r}
+plot(1/vafs.of.interest, SFS.neutral.homeostasis, xlab="1/VAF", ylab="Cumulative number of variants", type="l", col="red")
+lines(1/vafs.of.interest, SFS.neutral.expansion, xlab="1/VAF", ylab="Cumulative number of variants", type="l")
+lines(1/vafs.of.interest, SFS.sim[[1]], xlab="1/VAF", ylab="Cumulative number of variants", type="l", lty=2, col="black")
+lines(1/vafs.of.interest, SFS.sim[[2]], xlab="1/VAF", ylab="Cumulative number of variants", type="l", lty=2, col="red")
+legend("topleft", lty=c(1,1, 2, 2), col=c("red", "black", "red", "black"), legend=c("Homeoastasis (analytical)", "Expansion (analytical)",
+                                                                                    "Homeostasis (sim)", "Expansion (sim)"), cex = 0.5)
+```
+
+
+## Predict VAF distributions in tissues with clonal selection with FLORENCE
+
+Next, we look into a more complex scenario and introduce a clone after 5 years, which expands with a selective advantage of 50% for 10 years. To generate analytical predictions, we use the function`mutational.burden.with.selection`.
+
+```{r}
+mu <- 2 # mutation per division
+lambda.exp <- 1 # division rate during expansion
+delta.exp <- 0 # death rate during expansion
+N <- 1000 # cell count during homeostasis
+lambda.ss <- 1 # division rate during homeostasis
+t.end <- 15 # time of interest
+t.s <- 5 # time of driver acquisition
+s <- 0.5 # selective advantage
+
+SFS.selection.homeostasis <- mutational.burden.with.selection(lambda.exp = lambda, delta.exp = delta, mu = mu, b = clone.sizes.of.interest, N = N, lambda.ss = lambda.ss, t.end = t.end,t.s = t.s, s=s)
+
+plot(1/vafs.of.interest, SFS.selection.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.01"))
+lines(1/vafs.of.interest, SFS.neutral.expansion, ylab="Cumulative number of variants", type="l")
+legend("topleft", lty=c(1,1), col=c("red", "black"), legend=c("Homeoastasis", "Expansion"), cex = 0.5)
+
+plot(1/vafs.of.interest, SFS.selection.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n", main="zoom",
+     xlim=c(0, 20), ylim=c(0, 50))
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05), labels = c("0.5", "0.25", "0.125", "0.05"))
+lines(1/vafs.of.interest, SFS.neutral.expansion, type="l")
+legend("topleft", lty=c(1,1), col=c("red", "black"), legend=c("Homeoastasis", "Expansion"), cex = 0.5)
+```
+We find that subclonal selection manifests itself in a shoulder in the cumulative distribution (red curve). Again, we compare the analytical prediction to stochastic simulations: 
+
+```{r}
+set.seed(132342429)
+N = 1000 # 1000 stem cells
+NP = 0 # no progenitor cells
+mut.rate = 1 # 1 variants per daughter cell, amounting to 1 per division
+time.max = 15 # 15 years
+time.samples = c(0, 15) # report after expansion and at 1 year of life
+mutation.mode="Binomial"
+mut.rate.D = 0 # no driver mutations
+s.shape = 50# selective advantage of 0.5 
+s.rate = 100
+t.driver = 5 # time point of driver acquisition
+driver.mode = "fixed_time"
+parms.exp=c(lambda.s=1, delta.s=0, lambda.p=0, delta.p=0, alpha.s=0)
+parms.steady=c(lambda.s=1, delta.s=1, alpha.s=0, lambda.p=0, delta.p=0)
+
+sim.trees.selection = gillespie.sim.s.p(parms.exp = parms.exp, parms.steady = parms.steady, time.max = time.max, time.samples = time.samples, N = N,
+                         NP = NP, mut.rate = mut.rate, mutation.mode = mutation.mode, mut.rate.D = mut.rate.D, s.shape = s.shape, s.rate = s.rate, driver.mode = driver.mode, t.driver = t.driver)
+
+```
+
+
+Again, we first have a look at the phylogenetic trees:
+```{r}
+ape::plot.phylo(sim.trees.selection[[1]], main="Tree after expansion", show.tip.label = F)
+ape::plot.phylo(sim.trees.selection[[2]], main="Tree after 15 years of homeostasis", show.tip.label = F)
+```
+
+and observe now an expanded clade due to clonal selection. Next, we compute the VAFs in these trees,
+```{r}
+SFS.sim <- lapply(sim.trees.selection, function(tree){
+  vafs <- get_vaf_from_tree(tree)
+  sapply(vafs.of.interest, function(x){
+    sum(vafs >= x)
+  })
+})
+```
+
+and compare them to the analytical prediction, finding that they agree reasonably well. 
+```{r}
+plot(1/vafs.of.interest, SFS.selection.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.01"))
+lines(1/vafs.of.interest, SFS.neutral.expansion,  ylab="Cumulative number of variants", type="l")
+lines(1/vafs.of.interest, SFS.sim[[1]], ylab="Cumulative number of variants", type="l", lty=2, col="black")
+lines(1/vafs.of.interest, SFS.sim[[2]], ylab="Cumulative number of variants", type="l", lty=2, col="red")
+legend("topleft", lty=c(1,1, 2, 2), col=c("red", "black", "red", "black"), legend=c("Homeoastasis (analytical)", "Expansion (analytical)",
+                                                                                    "Homeostasis (sim)", "Expansion (sim)"), cex = 0.5)
+```
+
+### Effect of sequencing
+
+Until now we have looked into "actual" site frequency spectra. However, sequencing data does not measure VAFs exactly. Hence, we look into the effect of whole genome sequencing on the measured distribution. FLORENCE provides the function `simulated.data`to add binomial noise to a given VAF histogram. To apply `simulated.data`, we hence first compute a histogram from the cumulative distribution, using bins of width 1%.
+
+```{r}
+SFS.selection.homeostasis.density <- SFS.selection.homeostasis - c(SFS.selection.homeostasis[-1], 0)  
+plot(1/vafs.of.interest, SFS.selection.homeostasis, type="l", xlab="VAF", col="red", ylab="Number of variants", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.01"))
+lines(1/vafs.of.interest, SFS.selection.homeostasis.density, type="l", col="red", lty=2)
+legend("topleft", lty=c(1,2), col=c("red", "red"), legend=c("Cumulative distribution", "Densitiy distribution"), cex = 0.5)
+plot(1/vafs.of.interest, SFS.selection.homeostasis, type="l", xlab="VAF", col="red", ylab="Number of variants", xlim=c(0, 20), ylim=c(0, 50), main="Zoom", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05), labels = c("0.5", "0.25", "0.125", "0.05"))
+lines(1/vafs.of.interest, SFS.selection.homeostasis.density, type="l", col="red", ylab="Number of variants", lty=2)
+legend("topleft", lty=c(1,2), col=c("red", "red"), legend=c("Cumulative distribution", "Densitiy distribution"), cex = 0.5)
+```
+Note that the shoulder in the cumulative  distribution shows up as a small peak in the density distribution. Now, we add binomial noise using the function `simulated.data`. We choose a sequencing depth of 90x. In addition `simulated.data` filters variants with <3 mutant reads. 
+```{r}
+SFS.selection.homeostasis.density.seq <- simulated.data("bulk", vafs.of.interest*2, SFS.selection.homeostasis.density, depth=90, sensitivity = F, min.vaf = 0.01)
+```
+
+The function `simulated.data` returns simulated VAFs. To assess the effect of sequencing on the distribution, we compute the cumulative distribution of these simulated VAFs:
+```{r}
+SFS.selection.homeostasis.cumulative.seq <- sapply(vafs.of.interest, function(vaf){
+  sum(SFS.selection.homeostasis.density.seq >= vaf)
+})
+
+plot(1/vafs.of.interest, SFS.selection.homeostasis, type="l", xlab="VAF", col="red", ylab="Number of variants",main="Zoom", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.025, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.025", "0.01"))
+lines(1/vafs.of.interest, SFS.selection.homeostasis.cumulative.seq, type="l", col="red", lty=2)
+legend("topleft", lty=c(1,2), col=c("red", "red"), legend=c("Actual density distribution", "Sequenced density distribution"), cex = 0.5)
+
+```
+Note that the simulated data level off at around 0.025 VAF. This is expected, as sequencing returns the result of finite sampling. 
+
+## Parameter estimation
+
+FLORENCE can be used in conjunction with pyABC (Klinger et al., Bioinformatics, 2018) to estimate model parameters of drift and selection from deep WGS data. We provided exemplary data from 65 years-old individual A1 (Körber et al., Detecting and quantifying clonal selection in somatic mosaicism) to explain how parameter estimation can be invoked. Let's briefly look at the data:
+
+```{r}
+hist(snvs$A1$VAF, breaks=100, xlab="VAF", ylab="Number of variants")
+```
+
+A subclonal peak at around 0.25 VAF is already visually apparanet in the VAF histogram. We now ask if there is evidence for clonal selection and whether we can estimate the parameters (division rate, stem cell number, selective advantage, mutation rate) that shape the observed distribution. To this end, we use the function `mutational.burden.with.selection`from FLORENCE in conjunction with approximate Bayesian computation to predict the shape of the distribution for a given parameter set, and to compare it to the measured data. 
+
+We compare model and data on the cumulative VAF distribution, truncated at 5% VAF, as this is less prone to noise fluctuations than the density distribution. Let's begin by summarizing the data:
+
+```{r}
+age <- 65*365
+vafs.of.interest <- seq(0.05, 1, 0.01) # define the VAFs at which the cumulative mutation count is to be evaluated
+depth <- 90 # the data were generated with 90x sequencing
+
+# filtere variants with < 3 mutant reads and with a read depth < 10 or > 300: 
+vafs <- lapply(snvs, function(x){
+  x[x$Depth>=10 & x$Depth<=300  & as.numeric(x$varCounts)>=3, ]$VAF
+})
+
+## compute the cumulative number of variants per VAF of interest
+cumulated.vaf.count.mean <- lapply(vafs, function(y){
+    sapply(vafs.of.interest, function(x){
+    sum(y>=x)
+  })})
+
+mySumStatData <- cumulated.vaf.count.mean
+```
+
+pyABC is a python-based algorithm, but can read in model, summary statistics and distance measures from an R script. To run the below code-chunk, please install python3 and pyabc. We begin by defining the prior probabilities in python. We use uniform priors for most parameters and log-uniform priors for `N` and `lambda_ss`. To this end, we define uniform priors on the log-scale for these 2 parameters and transform the values back when evaluating the model (see below). Moreover, we define relative values for the time point of the driver mutation acquisition, `t_s`, and the associated selective advantage, `s`. Note that we - by choice - define the selective advantage as a reduction in cell loss. The relative priors range between 0 and 1/0.99, but will be transformed into absolute values between lower and upper bounds giving selected clones between 1% and 100% of the tissue in the model function below. The rationale for restricting clone sizes to a range between 1% and 100% is to facilitate clonal detection by restricting the parameter set to a range where selected clones are likely to fall into the measurable range. The measurable range is in our case 5% to 100% VAF - hence corresponding to clones of size 10% to 100%. Thus, if we choose `s` and `t_s` such that the clone reaches a size between 1% and 100%, selection should be easily identifiable, while still leaving the possibility to detect solutions with neutral evolution. 
+
+```{python}
+
+from pyabc import Distribution, RV, ABCSMC, sampler
+
+# mu: mutation rate - prior between 0.1 and 10
+# offset: number of clonal mutations - prior between 0 and 10
+# N: number of stem cells - log-uniform prior between 10^2.5 and 10^8 (has to be transformed into actual values in the model function)
+# delta_exp: loss rate during expansion - uniform prior between 0 and 0.7t
+# lambda_ss: division rate during steady state - log-uniform prior between 10^-3 and 10^-1 (has to be transformed into actual values in the model function)
+# t_s: time point of driver mutation acquisition - uniform between 0 and 1 (relative values, has to be transformed into actual values in the model function)
+# s: selective advantage: uniform prior between 0 and 0.99 (relative values, have to be transformed into actual values in the model function)
+
+prior = Distribution(mu=RV("uniform", 0.1, 9.9), offset=RV("uniform", 0, 10),  N=RV("uniform",2.5,5.5), delta_exp=RV("uniform",0,0.75), lambda_ss=RV("uniform", -3, 2), t_s=RV("uniform", 0, 1), s=RV("uniform", 0, 0.99))
+
+```
+
+Next, we define the model function in R. The model function takes a list containing the parameters as input, transform log-scaled and relative parameter values into absolute parameter values and then computes the expected SFS. Finally, the model adds sequencing noise to the predicted SFS.
+
+```{r}
+myModel <- function(parms){
+
+  ##### Parameter transformation
+  N <- round(10^parms$N) # prior is on log scale
+  delta.exp <- parms$delta_exp
+  lambda.ss <- 10^parms$lambda_ss # prior is on log scale
+  mu <- parms$mu
+  offset <- parms$offset
+
+  # we now restrict s and t_s to a range, where the selected clone reaches a minimal size of 0.01. Note that we will compare model and data between 0.05 VAF and 1.0 VAF - hence there is still a range of possibilities for a neutral solution (i.e., solutions where the selected clone is smaller than 10% / 5% VAF)
+  min.prior.size <- 0.01 # the minimal size of the selected clone in the model. Note that this 
+  min.t.s <- 0 # the earliest time point when the driver can be acquired is at t=0.
+  max.t.s <- age - log(max(1, min.prior.size*N))/lambda.ss # this is the latest time point at which the clone reaches min.prior.size in the most extreme case of unrestricted growth (delta = 0) (note that we model selection on cell loss, hence the fastest growth rate of a selected clone is lambda.ss).
+  # now, transform the relative value of t_s into the absolute value
+  t.s <- min.t.s + parms$t_s*(max.t.s - min.t.s) 
+  
+  # in analogy, transform the relative value of s into the absolute value:
+  min.s <- (lambda.ss*(age-max(t.s)) - log(N))/(lambda.ss*(age-max(t.s))) # at this selective advantage, the clone will get fixed by the sampling time point. Smaller values of s hence make no sense for the observed subclones
+  if(min.s < 0){
+    min.s <- 0
+  }
+  max.s <- (lambda.ss*(age-min(t.s)) - log(max(1, min.prior.size*N)))/(lambda.ss*(age-min(t.s))) # at this selective advantage, the clone will reach at least the min.prior.size at the time point of observation. Larger values of s will not result in a visible clone. 
+  s <- min.s + parms$s*(max.s-min.s)
+
+  # restrict s to 0, otherwise the solution cannot be evaluated
+  if(s < 0 & age >0){ 
+    modelResult <- rep(10^5, length(vafs.of.interest))
+    return( list(modelResult=modelResult))
+  }else if(s<0 & age==0){
+   ## if age = 0: no time for selection yet
+   s <- 0.99
+   t.s <- 0	
+  }
+
+  ##### SFS prediction
+  
+  modelResult <- list()
+  
+  # define the clone sizes of interest: start from a lower VAF of 0.05/2 (where 0.05 is the smallest measurable vaf) to account for stochastic fluxes from this interval into the measurable region
+  min.vaf <- 0.05
+  min.clone.size <- 0.05 # the lower detection limit for a selected clone with our data
+  clone.frequencies.for.fitting <- c(min.vaf/2, seq(min.vaf, 1, 0.01))   
+
+  # take only clone frequencies that correspond to at least 1 cell
+  clone.frequencies.for.fitting <- clone.frequencies.for.fitting[round(clone.frequencies.for.fitting*N)>0]
+
+  # simulate the mutation counts at each clone frequency
+  sim <-  mutational.burden.with.selection(mu=mu, N=N, lambda.exp=1, delta.exp=delta.exp, min.clone.size = min.clone.size,
+                                       lambda.ss=lambda.ss, t.end=age, t.s=t.s[1], s=s, round(clone.frequencies.for.fitting*N))
+  
+  # convert the cumulative counts into counts per interval
+  sim <- sim - c(sim[-1], 0)
+    
+  ## add offset to clonal bin 
+  sim[clone.frequencies.for.fitting==1] <- sim[clone.frequencies.for.fitting==1] + offset
+  
+    ##### Add sequencing noise
+  # simulate sequencing assuming 90x coverage on average
+  sim.vafs <- simulated.data("bulk", clone.frequencies.for.fitting, sim, depth=90, sensitivity= F, false.negative.per.vaf = NULL)
+  
+  # compute cumulative counts  
+  sim.vafs <- sapply(vafs.of.interest, function(x){
+    sum(sim.vafs >=x)
+  })
+  
+  ###### Return the model result
+  
+  modelResult[[1]] <- sim.vafs
+
+  list(modelResult=modelResult)
+}
+```
+
+We define the cost function between model and data as the difference betwen the simulated mutation counts at the VAFs of interest.
+```{r}
+# compute distance between model and data
+myDistance <- function(modelResult, mySumStatData){
+     res <- sum((mySumStatData[[1]] - modelResult$modelResult[[1]])^2)
+  res
+}
+```
+
+Now, we have put all model definitions together and can run pyABC. For the purpose of a fast-computation-demonstration, we here use a population_size  of 10 only and abrogate after a maximal number of 5, though higher population sizes and more generation numbers are recommended for actual fitting.
+
+```{python}
+
+from pyabc.external.r import R
+
+sample_specs=sampler.SingleCoreSampler()
+
+abc = ABCSMC(r.myModel, prior, r.myDistance, population_size = 10, sampler=sample_specs)
+
+import os
+from tempfile import gettempdir
+
+db = "sqlite:///" + os.path.join(os.getcwd(),"A1_model_fit.db") 
+
+abc.new(db, r.mySumStatData)
+
+history = abc.run(minimum_epsilon=1, max_nr_populations=3)
+```
+pyABC stores the model output in a database format. Using the built-in function `abc-export`, we can export the model fit as a csv file, 
+
+```{bash}
+abc-export --db "./A1_model_fit.db" --out "./A1_model_fit.csv" --format csv
+```
+
+which we then read in R to analyze and plot the model fit. We begin by comparing model and data (please install ggplot2 to re-run). To this end, we evaluate the model with each parameter set and plot the 95% CI of the model against the data. 
+```{r}
+library(ggplot2)
+fits <- read.csv("./A1_model_fit.csv")
+
+# simulate for all parameter sets
+sim<- matrix(0, nrow=10, ncol=length(mySumStatData[[1]]))
+  
+for(j in 1:10){
+  print(j)
+  
+  parms <- list(mu=fits$par_mu[j], N=fits$par_N[j], delta_exp = fits$par_delta_exp[j], lambda_ss=fits$par_lambda_ss[j],
+                offset=fits$par_offset[j], t_s=fits$par_t_s[j], s=fits$par_s[j])
+  
+  model <- myModel(parms)
+  sim[j,] <- model$modelResult[[1]]
+  
+}
+
+# compute 95% credible intervals
+max.pred<- apply(sim, 2, quantile, p=0.975)
+min.pred<- apply(sim, 2, quantile, p=0.025)
+
+data.vs.prediction <- data.frame(VAF=vafs.of.interest, mean=mySumStatData[[1]],
+                                 min.model= min.pred, max.model=max.pred, 
+                                 Age=age/365)
+
+max.y <- max(data.vs.prediction$max.model)
+
+p <-  ggplot(data=data.vs.prediction, aes(x=1/VAF, y=mean)) +
+      geom_ribbon(data=data.vs.prediction, aes(x=1/VAF, y=mean, ymin=min.model,ymax=max.model), alpha=1, fill="lightpink") +
+      geom_point(shape=1, fatten=1) + 
+      scale_y_continuous(name="Cumulative # of mutations") + theme(aspect.ratio = 1) +
+      scale_x_continuous( breaks = c(5, 10, 20), labels = c("0.2", "0.1", "0.05"), name = "Variant allele frequency") + 
+      coord_cartesian(ylim=c(0, max.y))
+
+print(p)
+      
+```
+
+And finally have a look at the estimated parameters along with their 95% credible intervals (please install reshape2, ggridges and HDInterval to reproduce). 
+
+```{r}
+
+library(reshape2)
+library(ggridges)
+library(HDInterval)
+# the model converts the prior distribution for t_s and s into absolute values to match clones within the limits of min.prior.size and N. We here convert the parameter estimates accordingly.
+fits$par_t_s_absolute <- apply(fits, 1, function(x){
+  min.t.s <- 0
+  max.t.s <- age - log(0.01*10^as.numeric(x["par_N"]))/10^as.numeric(x["par_lambda_ss"])
+  
+  t.s <- min.t.s +as.numeric(x["par_t_s"])*(max.t.s - min.t.s)
+})
+
+fits$par_s_absolute <- apply(fits, 1, function(x){
+  ts <- as.numeric(x["par_t_s_absolute"])
+
+  min.s <- (10^as.numeric(x["par_lambda_ss"])*(age-ts) - log(10^as.numeric(x["par_N"])))/(10^as.numeric(x["par_lambda_ss"])*
+                                                                                                            (age-ts))
+  if(min.s < 0){
+    min.s <- 0
+  }
+  max.s <- (10^as.numeric(x["par_lambda_ss"])*(age-ts) - log(0.01*10^as.numeric(x["par_N"])))/(10^as.numeric(x["par_lambda_ss"])*(age-ts))
+  
+  s <- min.s + as.numeric(x["par_s"])*(max.s-min.s)
+  
+})
+
+fits$size_of_clone <- exp(10^fits$par_lambda_ss*(1-fits$par_s_absolute)*(age - fits$par_t_s_absolute))/10^fits$par_N
+
+fits$size_of_clone[fits$size_of_clone>1] <- 1
+
+fits$age_of_clone <- (age - fits$par_t_s_absolute)/365
+
+## how long did the clone grow until reaching 2% of the stem cell compartment?
+
+fits$growth_per_year <- exp(10^fits$par_lambda_ss*(1-fits$par_s_absolute)*365)-1
+
+to.plot <- fits[,c("par_N", "par_delta_exp", "par_lambda_ss", "par_mu", "par_offset", "par_t_s_absolute",
+                   "par_s_absolute", "size_of_clone", "growth_per_year",
+                   "age_of_clone")]
+
+to.plot$par_t_s_absolute <- to.plot$par_t_s_absolute/365
+to.plot$par_lambda_ss <- 10^to.plot$par_lambda_ss*365
+
+to.plot <- melt(to.plot)
+
+p <- ggplot(to.plot, aes(x=value, y= 0, fill = stat(quantile))) + 
+  geom_density_ridges_gradient(quantile_lines = TRUE, quantile_fun = hdi, vline_linetype = 2) +
+  facet_wrap("variable", scales="free") +
+  scale_fill_manual(values = c("transparent", "grey", "transparent"), guide = "none")+
+  scale_y_continuous(labels=NULL, breaks=NULL, name="Posterior probability")
+
+print(p)
+    
+```
+

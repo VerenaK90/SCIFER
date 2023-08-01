@@ -129,7 +129,7 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
     
     res <- sapply(n.min, function(n.min){
       if(n.min <=10){
-        total <- .approx.count(t, mu, lambda, delta, n.min=11, n.max=100*max(N,N0), t.end) + .exact.count(t, mu, lambda, delta, 10, t.end)
+        total <- .approx.count(t, mu, lambda, delta, n.min=11, n.max=100*max(N,N0), t.end, N0) + .exact.count(t, mu, lambda, delta, 10, t.end, N0)
         if(n.min > 1){
           res <- total - .exact.count(t, mu, lambda, delta, n.min-1, t.end)
         }else{
@@ -137,7 +137,7 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
         }
         return(res)
       }else{
-        .approx.count(t, mu, lambda, delta, n.min=1, n.max=Inf, t.end) - .approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end)
+        .approx.count(t, mu, lambda, delta, n.min=1, n.max=Inf, t.end, N0) - .approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end, N0)
       }
       
     })
@@ -148,14 +148,14 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
   ## The sum necessary in order to compute the cumulative distribution, is here replaced by integration.
   sapply(n.min, function(n.min){
     
-    res <- .approx.count(t, mu, lambda, delta, n.min=1, n.max=100*max(N0, N), t.end) - .approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end) 
+    res <- .approx.count(t, mu, lambda, delta, n.min=1, n.max=100*max(N0, N), t.end, N0) - .approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end, N0) 
     return(res)
   })
   
 }
 
 ## Exact number of mutations present in at least n cells at time t
-.exact.count <- function(t, mu, lambda, delta, n, t.end){
+.exact.count <- function(t, mu, lambda, delta, n, t.end, N0){
   sum(sapply(seq(1,n), function(n){
     integrand <- function(t, mu, lambda, delta, n){
       mu*lambda*N0*exp((lambda - delta)*t)*(density.a.b.exact(lambda, delta, t.end-t, 1, n)) 
@@ -169,7 +169,7 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
 
 ## Approximate number of mutations present in at least n.min cells at time t
 
-.approx.count <- function(t, mu, lambda, delta, n.min, n.max, t.end){
+.approx.count <- function(t, mu, lambda, delta, n.min, n.max, t.end, N0){
   integrand <- function(t, mu, lambda, delta, n.min, n.max){
     mu*lambda*N0*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.end-t))*(density.a.b.exact(lambda, delta, t.end-t, 1, n.max) - 
                                                                                density.a.b.exact(lambda, delta, t.end-t, 1, n.min))

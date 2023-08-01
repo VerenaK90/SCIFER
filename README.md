@@ -6,7 +6,11 @@ FLORENCE also provides modalities to simulate these processes stochastically, us
 
 ## Documentation
 
-Function documentation is available in the accompanying manual (FLORENCE_0.0.0.9000.pdf)[FLORENCE_0.0.0.9000.pdf] and an exemplary guide on how to use FLORENCE to model variant accumulation and to do parameter estimation in conjunction with pyABC is given in the accompanying vignette. 
+Function documentation is available in the accompanying manual (FLORENCE_0.0.0.9000.pdf)[FLORENCE_0.0.0.9000.pdf].
+
+## Demo 
+
+An exemplary guide on how to use FLORENCE to model variant accumulation and to do parameter estimation in conjunction with pyABC is given in the accompanying vignette. Re-running this example cases should take 10-15 minutes.
 
 ## System requirements
 

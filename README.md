@@ -44,7 +44,7 @@ devtools::install.github("VerenaK90/FLORENCE")
 
 If you want to install the vignette, run
 
-devtools::install.github("VerenaK90/FLORENCE", build_vignettes=TRUE). The vignette can then be viewed via vignette("Vignette", "FLORENCE").
+devtools::install.github("VerenaK90/FLORENCE", build_vignettes=TRUE). The vignette can then be viewed via vignette("Vignette", "FLORENCE"). The package including its vignette can be installed within 10-15 minutes given that python, R and pyABC have been installed.
 
 ## License
 

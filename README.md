@@ -52,7 +52,7 @@ devtools::install.github("VerenaK90/FLORENCE", build_vignettes=TRUE). The vignet
 
 ## License
 
-FLORENCE is run under an MIT License.
+FLORENCE is run under an [MIT License](https://web.archive.org/web/20160411224647/https://opensource.org/licenses/MIT).
 
 ## Contact
 

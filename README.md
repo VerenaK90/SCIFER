@@ -6,7 +6,7 @@ FLORENCE also provides modalities to simulate these processes stochastically, us
 
 ## Documentation
 
-Function documentation is available in the accompanying manual (FLORENCE_0.0.0.9000.pdf)[FLORENCE_0.0.0.9000.pdf].
+Function documentation is available in the accompanying manual [FLORENCE_0.0.0.9000.pdf](FLORENCE_0.0.0.9000.pdf).
 
 ## Demo 
 
@@ -44,11 +44,11 @@ Körber et al., Detecting and quantifying clonal selection in somatic mosaics.
 ## Installation
 
 library(devtools)
-devtools::install_github("VerenaK90/FLORENCE")
+devtools::install_github("VerenaK90/FLORENCE/tree/paper")
 
 If you want to install the vignette, run
 
-devtools::install.github("VerenaK90/FLORENCE", build_vignettes=TRUE). The vignette can then be viewed via vignette("Vignette", "FLORENCE"). The package including its vignette can be installed within 10-15 minutes given that python, R and pyABC have been installed.
+devtools::install.github("VerenaK90/FLORENCE/tree/paper", build_vignettes=TRUE). The vignette can then be viewed via vignette("Vignette", "FLORENCE"). The package including its vignette can be installed within 10-15 minutes given that python, R and pyABC have been installed.
 
 ## License
 

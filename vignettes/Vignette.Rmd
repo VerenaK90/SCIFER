@@ -1,10 +1,10 @@
 ---
-title: "Simulation and parameter estimation of mutation accumulation with FLORENCE"
+title: "Simulation and parameter estimation of mutation accumulation with SCIFER"
 author: "Verena Körber"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Simulation and parameter estimation of mutation accumulation with FLORENCE}
+  %\VignetteIndexEntry{Simulation and parameter estimation of mutation accumulation with SCIFER}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -16,14 +16,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette gives an overview on function modalities provided in the R package FLORENCE. FLORENCE predicts variant accumulation in growing and homeostatic tissues that evolve neutrally or via clonal selection. Expected site frequency spectra can be assessed with analytical expressions or with stochastic simulations of variant accumulation. We will first compare the results of the analytical expressions and stochastic simulations. Second, we will introduce how FLORENCE can be used for parameter estimation from real data.  
+This vignette gives an overview on function modalities provided in the R package SCIFER. SCIFER predicts variant accumulation in growing and homeostatic tissues that evolve neutrally or via clonal selection. Expected site frequency spectra can be assessed with analytical expressions or with stochastic simulations of variant accumulation. We will first compare the results of the analytical expressions and stochastic simulations. Second, we will introduce how SCIFER can be used for parameter estimation from real data.  
 
-## Predict VAF distributions in neutrally evolving tissues with FLORENCE
+## Predict VAF distributions in neutrally evolving tissues with SCIFER
 
-Let's begin by loading FLORENCE and predicting the VAF distribution of a tissue sustained by 1,000 cells upon exponential expansion. We assume that there is no cell death during expansion and that on average two mutations are acquired per division (amounting to 1 per daughter cell), and focus on VAFs between 1% and 100% - roughly covering the range that can be experimentally assessed.
+Let's begin by loading SCIFER and predicting the VAF distribution of a tissue sustained by 1,000 cells upon exponential expansion. We assume that there is no cell death during expansion and that on average two mutations are acquired per division (amounting to 1 per daughter cell), and focus on VAFs between 1% and 100% - roughly covering the range that can be experimentally assessed.
 
 ```{r}
-library(FLORENCE)
+library(SCIFER)
 mu <- 2 # mutation per division
 lambda <- 1 # division rate
 delta <- 0 # death rate
@@ -58,9 +58,9 @@ legend("topleft", lty=c(1,1), col=c("red", "black"), legend=c("Homeoastasis", "E
 
 We note that the linear increase in cumulative variants gets lost during tissue homeostasis. Due to neutral drift, the cumulative distribution of variants now bends upwards at small VAFs. 
 
-## Simulate VAF distributions in neutrally evolving tissues with FLORENCE
+## Simulate VAF distributions in neutrally evolving tissues with SCIFER
 
-Until now we have used analytical expressions for the average SFS. Now, we will compare our results to stochastic simulations, employing the function `gillespie.sim.s.p` provided by FLORENCE. `gillespie.sim.s.p` allows not only the simulation of stem cell dynamics, but also of progenitor cells. For now, we focus on stem cell dynamics only, hence setting the progenitor parameters (`lambda.p`and `delta.p`) to zero. 
+Until now we have used analytical expressions for the average SFS. Now, we will compare our results to stochastic simulations, employing the function `gillespie.sim.s.p` provided by SCIFER. `gillespie.sim.s.p` allows not only the simulation of stem cell dynamics, but also of progenitor cells. For now, we focus on stem cell dynamics only, hence setting the progenitor parameters (`lambda.p`and `delta.p`) to zero. 
 
 ```{r}
 set.seed(132342423)
@@ -107,7 +107,7 @@ legend("topleft", lty=c(1,1, 2, 2), col=c("red", "black", "red", "black"), legen
 ```
 
 
-## Predict VAF distributions in tissues with clonal selection with FLORENCE
+## Predict VAF distributions in tissues with clonal selection with SCIFER
 
 Next, we look into a more complex scenario and introduce a clone after 5 years, which expands with a selective advantage of 50% for 10 years. To generate analytical predictions, we use the function`mutational.burden.with.selection`.
 
@@ -187,7 +187,7 @@ legend("topleft", lty=c(1,1, 2, 2), col=c("red", "black", "red", "black"), legen
 
 ### Effect of sequencing
 
-Until now we have looked into "actual" site frequency spectra. However, sequencing data does not measure VAFs exactly. Hence, we look into the effect of whole genome sequencing on the measured distribution. FLORENCE provides the function `simulated.data`to add binomial noise to a given VAF histogram. To apply `simulated.data`, we hence first compute a histogram from the cumulative distribution, using bins of width 1%.
+Until now we have looked into "actual" site frequency spectra. However, sequencing data does not measure VAFs exactly. Hence, we look into the effect of whole genome sequencing on the measured distribution. SCIFER provides the function `simulated.data`to add binomial noise to a given VAF histogram. To apply `simulated.data`, we hence first compute a histogram from the cumulative distribution, using bins of width 1%.
 
 ```{r}
 SFS.selection.homeostasis.density <- SFS.selection.homeostasis - c(SFS.selection.homeostasis[-1], 0)  
@@ -221,13 +221,13 @@ Note that the simulated data level off at around 0.025 VAF. This is expected, as
 
 ## Parameter estimation
 
-FLORENCE can be used in conjunction with pyABC (Klinger et al., Bioinformatics, 2018) to estimate model parameters of drift and selection from deep WGS data. We provided exemplary data from 65 years-old individual A1 (Körber et al., Detecting and quantifying clonal selection in somatic mosaicism) to explain how parameter estimation can be invoked. Let's briefly look at the data:
+SCIFER can be used in conjunction with pyABC (Klinger et al., Bioinformatics, 2018) to estimate model parameters of drift and selection from deep WGS data. We provided exemplary data from 65 years-old individual A1 (Körber et al., Detecting and quantifying clonal selection in somatic mosaicism) to explain how parameter estimation can be invoked. Let's briefly look at the data:
 
 ```{r}
 hist(snvs$A1$VAF, breaks=100, xlab="VAF", ylab="Number of variants")
 ```
 
-A subclonal peak at around 0.25 VAF is already visually apparanet in the VAF histogram. We now ask if there is evidence for clonal selection and whether we can estimate the parameters (division rate, stem cell number, selective advantage, mutation rate) that shape the observed distribution. To this end, we use the function `mutational.burden.with.selection`from FLORENCE in conjunction with approximate Bayesian computation to predict the shape of the distribution for a given parameter set, and to compare it to the measured data. 
+A subclonal peak at around 0.25 VAF is already visually apparanet in the VAF histogram. We now ask if there is evidence for clonal selection and whether we can estimate the parameters (division rate, stem cell number, selective advantage, mutation rate) that shape the observed distribution. To this end, we use the function `mutational.burden.with.selection`from SCIFER in conjunction with approximate Bayesian computation to predict the shape of the distribution for a given parameter set, and to compare it to the measured data. 
 
 We compare model and data on the cumulative VAF distribution, truncated at 5% VAF, as this is less prone to noise fluctuations than the density distribution. Let's begin by summarizing the data:
 

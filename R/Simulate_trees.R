@@ -521,4 +521,3 @@ gillespie.sim.s.p <- function(parms.exp, parms.steady, time.max=50, time.samples
   
   return(res.list)
 }
-

@@ -43,8 +43,7 @@ Körber et al., Detecting and quantifying clonal selection in somatic mosaics.
 
 ## Installation
 
-library(devtools)
-devtools::install_github("VerenaK90/SCIFER/tree/paper", ref="paper")
+devtools::install_github("VerenaK90/SCIFER", ref="paper")
 
 If you want to install the vignette, run
 

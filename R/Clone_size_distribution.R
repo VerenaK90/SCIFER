@@ -451,7 +451,7 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
     integrand <- function(t, mu, lambda, delta, n){
       p.mut.in.sel <- exp((lambda - delta)*(t.s - t))/exp((lambda - delta)*t.s)
       if(n==0){
-        p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*(density.a.b.exact(lambda, delta, t.end-t, 1, 0) )
+        p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)
       }else{
         p.mut.in.sel*mu*lambda*exp((lambda - delta)*t)*((density.a.b.exact(lambda, delta, t.end-t, 1, N*100) -                                                                                                   
                                                            density.a.b.exact(lambda, delta, t.end-t, 1, n))/log(.beta(lambda, delta, t.end-t)))

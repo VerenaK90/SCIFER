@@ -129,7 +129,7 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
     
     res <- sapply(n.min, function(n.min){
       if(n.min <=10){
-        total <- .approx.count(t, mu, lambda, delta, n.min=11, n.max=100*max(N,N0), t.end, N0) + .exact.count(t, mu, lambda, delta, 10, t.end, N0)
+        total <- .approx.count(mu, lambda, delta, n.min=11, n.max=100*max(N,N0), t.end, N0) + .exact.count(t, mu, lambda, delta, 10, t.end, N0)
         if(n.min > 1){
           res <- total - .exact.count(t, mu, lambda, delta, n.min-1, t.end)
         }else{
@@ -137,7 +137,7 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
         }
         return(res)
       }else{
-        .approx.count(t, mu, lambda, delta, n.min=1, n.max=Inf, t.end, N0) - .approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end, N0)
+        .approx.count(mu, lambda, delta, n.min=1, n.max=Inf, t.end, N0) - .approx.count(mu, lambda, delta, n.min=1, n.max=n.min, t.end, N0)
       }
       
     })
@@ -148,7 +148,7 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
   ## The sum necessary in order to compute the cumulative distribution, is here replaced by integration.
   sapply(n.min, function(n.min){
     
-    res <- .approx.count(t, mu, lambda, delta, n.min=1, n.max=100*max(N0, N), t.end, N0) - .approx.count(t, mu, lambda, delta, n.min=1, n.max=n.min, t.end, N0) 
+    res <- .approx.count(mu, lambda, delta, n.min=1, n.max=100*max(N0, N), t.end, N0) - .approx.count(mu, lambda, delta, n.min=1, n.max=n.min, t.end, N0) 
     return(res)
   })
   
@@ -169,13 +169,13 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
 
 ## Approximate number of mutations present in at least n.min cells at time t
 
-.approx.count <- function(t, mu, lambda, delta, n.min, n.max, t.end, N0){
+.approx.count <- function(mu, lambda, delta, n.min, n.max, t.end, N0){
   integrand <- function(t, mu, lambda, delta, n.min, n.max){
     mu*lambda*N0*exp((lambda - delta)*t)/log(.beta(lambda, delta, t.end-t))*(density.a.b.exact(lambda, delta, t.end-t, 1, n.max) - 
                                                                                density.a.b.exact(lambda, delta, t.end-t, 1, n.min))
     
   }
-  total <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n.min=n.min, n.max=n.max)$value
+  total <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n.min=n.min, n.max=n.max, rel.tol = .Machine$double.eps^0.1)$value
   total
 }
 
@@ -487,7 +487,6 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
   mutations.from.founder.clone.after.t.s <- exp((lambda - delta)*t.s)*sapply(b, function(n.min){
     mutations.noncritical.bd(lambda = lambda, delta = delta, t.end = t.end - t.s, 
                              mu = mu, n.min = n.min, N = exp((lambda - delta)*(t.end - t.s)), mode="exact")})
-  
   
   mutations.before.t.s + mutations.from.selected.clone.after.t.s + mutations.from.founder.clone.after.t.s
   

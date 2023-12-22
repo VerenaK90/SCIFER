@@ -2,25 +2,22 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{p.ss.exact}
 \alias{p.ss.exact}
-\title{Clone size distribution of a critical birth-death process (exact).}
+\title{Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process}
 \usage{
 p.ss.exact(lambda, a, b, t)
 }
 \arguments{
 \item{lambda}{proliferation rate}
 
-\item{a}{clone size at \code{t=0}}
+\item{a}{clone size at t=0}
 
-\item{b}{clone size at \code{t=t}}
+\item{b}{clone size at t=t}
 
 \item{t}{time}
 }
 \value{
-The probability to grow from \code{a} to \code{b} within \code{t}.
+The probability to growth from a to b within t.
 }
 \description{
-Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process.
-}
-\references{
-Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
+Exact solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process
 }

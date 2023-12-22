@@ -897,6 +897,20 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   # add column names to the mother-daughter relationship matrix
   colnames(mother.daughter) <- c("M", "D")
   
+  # order clones by time point of appearance
+  clone.order <- data.frame(new.id = 1:length(t.s), 
+                            old.id = order(t.s))
+  
+  mother.daughter <- rbind(c(1,1), mother.daughter)
+  mother.daughter <- apply(mother.daughter, 2, function(x){
+    sapply(x, function(y){
+      clone.order[clone.order$old.id == y,"new.id"]
+    })
+  })
+
+  s <- s[clone.order$new.id]
+  t.s <- sort(t.s)
+  
   # analyze the population dynamics and identify the time points at which individual clones peak
   # initiate the system with N normal cells and 0 mutant cells. The system also returns the total number of death events, which will be needed below to compute drift during contraction
   cell.states <- .forward_dynamics(N = N, init.cells = c(1, rep(0, length(s)-1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, lambda.exp = lambda.exp,

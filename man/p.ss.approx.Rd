@@ -2,30 +2,24 @@
 % Please edit documentation in R/Clone_size_distribution.R
 \name{p.ss.approx}
 \alias{p.ss.approx}
-\title{Clone size distribution of a critical birth-death process (approximate).}
+\title{Approximate solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process using gamma distribution}
 \usage{
 p.ss.approx(lambda, a, b, t, mode = "density")
 }
 \arguments{
 \item{lambda}{proliferation rate}
 
-\item{a}{clone size at \code{t=0}}
+\item{a}{clone size at t=0}
 
-\item{b}{clone size at \code{t=t}}
+\item{b}{clone size at t=t}
 
 \item{t}{time}
 
-\item{mode}{either "density" if density distribution is to be returned or "cumulative", defaults to "density".}
+\item{mode}{either 'density' if density distribution is to be returned or 'cumulative'.}
 }
 \value{
-The approximate probability to grow from \code{a} to \code{b} within \code{t}.
+The approximate probability to grow from a to b within t.
 }
 \description{
-Probabilitly to grow from a clone of size \code{a} to a clone of size \code{b} within \code{t} in a critical birth-death process using a parametrized \eqn{\Gamma}-distribution for approximation.
-}
-\references{
-Bailey, NTJ (1964). The elements of stochastic processes with applications to the natural sciences, Wiley (New York).
-The function is approximated with a \eqn{\Gamma}-distribution that is parametrized with
-\eqn{shape = \mu^2/\sigma, scale = \sigma/\mu}, where
-\eqn{\mu = a, \sigma = 2a \lambda t}
+Approximate solution to grow from a clone of size a to a clone of size b within t in a critical birth-death process using gamma distribution
 }

@@ -914,7 +914,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   # analyze the population dynamics and identify the time points at which individual clones peak
   # initiate the system with N normal cells and 0 mutant cells. The system also returns the total number of death events, which will be needed below to compute drift during contraction
   cell.states <- .forward_dynamics(N = N, init.cells = c(1, rep(0, length(s)-1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, lambda.exp = lambda.exp,
-                                   delta.exp = delta.exp, s = s, t.s = t.s, mother.daughter = mother.daughter, t = seq(0, t.end, 0.1))
+                                   delta.exp = delta.exp, s = s, t.s = t.s, mother.daughter = mother.daughter, t = seq(0, t.end, length.out = 1000))
   final.sizes <- cell.states[nrow(cell.states),1+(1:length(s))]
   
   # neglect clones smaller than the minimal clone size; only filter daughter cells; do iteratively!

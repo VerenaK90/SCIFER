@@ -582,7 +582,7 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   ## To assess it, we approximate the loss with exponential decay, requiring the same number of death events in the founder cell population 
   
   cell.states <- .forward_dynamics(N = N, init.cells = c(1, 0), lambda.ss = lambda.ss, delta.ss = lambda.ss, lambda.exp = lambda.exp,
-                                   delta.exp = delta.exp, s = c(1,s), t.s = c(0,t.s), mother.daughter = matrix(c(1,2),nrow=1), t = seq(0, t.end, 0.1))
+                                   delta.exp = delta.exp, s = c(1,s), t.s = c(0,t.s), mother.daughter = matrix(c(1,2),nrow=1), t = seq(0, t.end, length.out = 1000))
   
   delta.founder <- .approximate.delta(lambda.ss, N, t.end - t.s, cell.states[which(t.end <= cell.states[,1])[1],4] -
                                         cell.states[which(cell.states[,1] >= t.s)[1], 4])
@@ -644,7 +644,11 @@ mutational.burden.with.selection <- function(mu, N, lambda.exp, delta.exp, lambd
   
   mutations.from.selected.clone <- mutations.noncritical.bd(lambda.ss, lambda.ss*s, t.end-t.s, mu, b, N=N)
   
-  mutations.from.founder.clone <- mutations.noncritical.bd(lambda.ss, delta.founder, t.end - t.s, mu, b, N0=N, N=(1-f.sel)*N)
+  if(lambda.ss == delta.founder){
+    mutations.from.founder.clone <- sapply(b, function(b){mutations.during.steady.state(lambda.ss, N, mu, b, t.end - t.s)})
+  }else{
+    mutations.from.founder.clone <- mutations.noncritical.bd(lambda.ss, delta.founder, t.end - t.s, mu, b, N0=N, N=(1-f.sel)*N)
+  }
   ## truncate at b= f.sel*N
   mutations.from.selected.clone[b>f.sel*N] <- 0
   mutations.at.t.end <- mutations.at.t.end + mutations.from.selected.clone + mutations.from.founder.clone
@@ -954,7 +958,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     })
     
     cell.states <- .forward_dynamics(N = N, init.cells = c(1, rep(0, length(s)-1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, lambda.exp = lambda.exp,
-                                     delta.exp = delta.exp, s = s, t.s = t.s, mother.daughter = mother.daughter, t = seq(0, t.end, 0.1))
+                                     delta.exp = delta.exp, s = s, t.s = t.s, mother.daughter = mother.daughter, t = seq(0, t.end, length.out = 1000))
     final.sizes <- cell.states[nrow(cell.states),1+(1:length(s))]
   }
 

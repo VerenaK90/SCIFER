@@ -911,6 +911,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
       clone.order[clone.order$old.id == y,"new.id"]
     })
   })
+  mother.daughter <- mother.daughter[order(mother.daughter[,"D"]),,drop=F]
 
   s <- s[clone.order$new.id]
   t.s <- sort(t.s)

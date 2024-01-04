@@ -933,6 +933,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
       to.remove <- unique(c(to.remove, clone, daughters.this.clone))
     }
   }
+
   if(length(to.remove)>0){
     s <- s[-to.remove]
     t.s <- t.s[-to.remove]
@@ -944,6 +945,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   if(nrow(mother.daughter)==1){
     return(mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = accuracy.a))
   }else{
+
     # rename daughters in order of appearance
     id.conversion <- data.frame(new.id = 1:length(t.s), 
                                 old.id = mother.daughter[,"D"])
@@ -984,7 +986,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   new.muts <- matrix(0, nrow=length(t.s), ncol=length(a)) # define a earlier, fine-grained histogram for computation
   new.muts[1,] <- mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, time.points.of.interest[1], a)
   for(timepoint in 1:(length(time.points.of.interest))){
-    
+
     lower.t <- time.points.of.interest[timepoint]
     upper.t <- c(time.points.of.interest[-1], t.end)[timepoint]
     
@@ -1238,7 +1240,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     state[,"time"] <- state[,"time"] - duration
     output <- rbind(output, state)
     cell.states <- state[nrow(state),1+(1:length(s))]
-    death.states <- state[nrow(state),(length(s) + 1): (2*length(s))]
+    death.states <- state[nrow(state),(length(s) + 2): (2*length(s)+1)]
   }
   # homeostasis:
   init <- c(cell.states, death.states)

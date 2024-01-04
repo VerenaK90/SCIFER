@@ -923,20 +923,21 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   
   # neglect clones smaller than the minimal clone size; only filter daughter cells; do iteratively!
   
+  to.remove <- c()
   for(clone in mother.daughter[,"D"]){
     daughters.this.clone <- setdiff(.get.progeny(mother.daughter, clone), clone)
     total.size <- sum(cell.states[nrow(cell.states),c(clone, daughters.this.clone) + 1])
     # if the total size of this clone is smaller than the minimal clone size, remove the clone and all it's daughters
     if(total.size/N < min.clone.size){
-      to.remove <- which(mother.daughter[,"M"] %in% c(clone, daughters.this.clone) |
-                           mother.daughter[,"D"] %in% c(clone, daughters.this.clone))
-      if(length(to.remove)>0){
-        s <- s[-to.remove]
-        t.s <- t.s[-to.remove]
-        final.sizes <- final.sizes[-to.remove]
-        cell.states <- cell.states[,-c(to.remove + 1, (length(s)+2+to.remove)),drop=F]
-        mother.daughter <- mother.daughter[-to.remove,,drop=F]
-      }
+      to.remove <- unique(c(to.remove, which(mother.daughter[,"M"] %in% c(clone, daughters.this.clone) |
+                           mother.daughter[,"D"] %in% c(clone, daughters.this.clone))))
+    }
+    if(length(to.remove)>0){
+      s <- s[-to.remove]
+      t.s <- t.s[-to.remove]
+      final.sizes <- final.sizes[-to.remove]
+      cell.states <- cell.states[,-c(to.remove + 1, (length(s)+2+to.remove)),drop=F]
+      mother.daughter <- mother.daughter[-to.remove,,drop=F]
     }
     
     if(nrow(mother.daughter)==0){

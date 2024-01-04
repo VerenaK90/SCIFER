@@ -932,18 +932,13 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
       to.remove <- unique(c(to.remove, which(mother.daughter[,"M"] %in% c(clone, daughters.this.clone) |
                            mother.daughter[,"D"] %in% c(clone, daughters.this.clone))))
     }
-    if(length(to.remove)>0){
-      s <- s[-to.remove]
-      t.s <- t.s[-to.remove]
-      final.sizes <- final.sizes[-to.remove]
-      cell.states <- cell.states[,-c(to.remove + 1, (length(s)+2+to.remove)),drop=F]
-      mother.daughter <- mother.daughter[-to.remove,,drop=F]
-    }
-    
-    if(nrow(mother.daughter)==0){
-      break
-    }
-    
+  }
+  if(length(to.remove)>0){
+    s <- s[-to.remove]
+    t.s <- t.s[-to.remove]
+    final.sizes <- final.sizes[-to.remove]
+    cell.states <- cell.states[,-c(to.remove + 1, (length(s)+2+to.remove)),drop=F]
+    mother.daughter <- mother.daughter[-to.remove,,drop=F]
   }
   if(nrow(mother.daughter)==1){
     return(mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = accuracy.a))

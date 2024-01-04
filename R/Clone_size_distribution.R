@@ -929,8 +929,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     total.size <- sum(cell.states[nrow(cell.states),c(clone, daughters.this.clone) + 1])
     # if the total size of this clone is smaller than the minimal clone size, remove the clone and all it's daughters
     if(total.size/N < min.clone.size){
-      to.remove <- unique(c(to.remove, which(mother.daughter[,"M"] %in% c(clone, daughters.this.clone) |
-                           mother.daughter[,"D"] %in% c(clone, daughters.this.clone))))
+      to.remove <- unique(c(to.remove, clone, daughters.this.clone))
     }
   }
   if(length(to.remove)>0){
@@ -938,7 +937,8 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     t.s <- t.s[-to.remove]
     final.sizes <- final.sizes[-to.remove]
     cell.states <- cell.states[,-c(to.remove + 1, (length(s)+2+to.remove)),drop=F]
-    mother.daughter <- mother.daughter[-to.remove,,drop=F]
+    mother.daughter <- mother.daughter[-which(mother.daughter[,"M"] %in% to.remove |
+                                                mother.daughter[,"D"] %in% to.remove),,drop=F]
   }
   if(nrow(mother.daughter)==1){
     return(mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = accuracy.a))

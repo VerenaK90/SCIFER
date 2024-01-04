@@ -1038,8 +1038,6 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
             # total size of the daughter subclones
             total.size.of.all.daughters.in.comb <- sum(final.sizes[comb])
             
-            res.this.combination <- sapply(b, function(b){
-              
               ## if b is bigger than the selected daughter clones, it may contain mutations present in both the selected clone and the founder population (prob.this.combination)
               
               if(b >= total.size.of.all.daughters.in.comb){ 
@@ -1048,24 +1046,24 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                 prob.this.combination.upper <- probability.this.combination(bin.size = c(a[-1], 2*N), clone.size.mother = clone.size.now, n.daughters.present = length(comb), n.daughters.absent = length(daughters.this.clone) - length(comb))
                 
                 # if the mutation ends up in the daughter clones, drift accounts only for the remaining size (b - total.size.of all.daughters.in.comb)
-                res <- histogram.drift(lower.bins.1 = a - 1, n.muts = new.muts[clone,], lower.bins.2 = round(b - total.size.of.all.daughters.in.comb), N = N,
+                res.this.combination <- histogram.drift(lower.bins.1 = a - 1, n.muts = new.muts[clone,], lower.bins.2 = round(b - total.size.of.all.daughters.in.comb), N = N,
                                        bin.p1 = prob.this.combination, bin.p2 = prob.this.combination.upper,
                                        lambda = lambda.ss, delta = delta.this.clone.until.tend, t = time.span.tend)
                 
-                res
+                
               }else{ ## mutations present in at least b cells, where b <= f.sel. --> cumulative distribution from founder cell population +
                 
                 prob.this.combination <- probability.this.combination(bin.size = a, clone.size.mother = clone.size.now, n.daughters.present = length(comb), n.daughters.absent = length(daughters.this.clone) - length(comb))
                 prob.this.combination.upper <- probability.this.combination(bin.size = c(a[-1], 2*N), clone.size.mother = clone.size.now, n.daughters.present = length(comb), n.daughters.absent = length(daughters.this.clone) - length(comb))
                 
                 # if the mutation ends up in the daughter clones, drift accounts only for the remaining size (b - total.size.of all.daughters.in.comb)
-                res <- histogram.drift(lower.bins.1 = a - 1, n.muts = new.muts[clone,], lower.bins.2 = 0, N = N,
+                res.this.combination <- histogram.drift(lower.bins.1 = a - 1, n.muts = new.muts[clone,], lower.bins.2 = 0, N = N,
                                        bin.p1 = prob.this.combination, bin.p2 = prob.this.combination.upper,
                                        lambda = lambda.ss, delta = delta.this.clone.until.tend, t = time.span.tend)
                 
-                res
+                
               }
-            })
+            
             res.this.combination
           })))
           # expected number of mutations in clone size b if not present in any daughter
@@ -1146,6 +1144,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
         
         new.muts[clone,][new.muts[clone,]<0] <- 0 # for very small expansions, our approximation can yield negative results; take them out
       }else{
+        time.span.upper <- upper.t - lower.t
         if(upper.t == t.end){
           new.muts[clone,] <- sapply(b, function(b){
             if(b > 2*clone.size.now){return(0)}

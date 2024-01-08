@@ -1225,25 +1225,36 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   
   cell.states <- init.cells
   death.states <- rep(0, length(s)) # collect the number of death events per clone
+  live.index <- which(init.cells!=0) # model only clones that actually exist; better as it prevents numerical instability
+  zero.index <- which(init.cells==0)
   # bundle the parameters in a list
-  parms <- list(N=N, lambda=lambda.exp, delta=delta.exp, s=s)
+  parms <- list(N=N, lambda=lambda.exp, delta=delta.exp, s=s[live.index])
   
   # if we start at t=0, model initial expansion
   if(t[1]==0){
-    pre.init <- c(cell.states, death.states)
+    pre.init <- c(cell.states[live.index], death.states[live.index])
     
     # initial expansion:
-    
     duration <- log(N)/(lambda.exp[1] - delta.exp[1])
     state <- deSolve::ode(as.vector(pre.init), seq(0, duration, resolution), .clonal_dynamics_odes, parms = parms)
     state[,"time"] <- state[,"time"] - duration
+    # get cell state and death event state trajectories
+    cell.state.traj <- state[,1+(1:length(s[live.index]))]
+    death.state.traj <- state[,(length(s[live.index]) + 2): (2*length(s[live.index])+1)]
+    # append zeros for non-existing clones and order correctly
+    cell.state.traj <- cbind(cell.state.traj, matrix(0, nrow(state), length(zero.index)))
+    cell.state.traj <- cell.state.traj[,order(c(live.index, zero.index))]
+    death.state.traj <- cbind(death.state.traj, matrix(0, nrow(state), length(zero.index)))
+    death.state.traj <- death.state.traj[,order(c(live.index, zero.index))]
+    state <- cbind(state[,1], cell.state.traj, death.state.traj)
+       
     output <- rbind(output, state)
     cell.states <- state[nrow(state),1+(1:length(s))]
     death.states <- state[nrow(state),(length(s) + 2): (2*length(s)+1)]
   }
   # homeostasis:
-  init <- c(cell.states, death.states)
-  parms <- list(N=N, lambda=lambda.ss, delta=delta.ss, s=s)
+  init <- c(cell.states[live.index], death.states[live.index])
+  parms <- list(N=N, lambda=lambda.ss, delta=delta.ss, s=s[live.index])
   # only consider clones born after the start of the simulation
   t.s <- t.s[t.s >= min(t),drop=F]
   
@@ -1254,6 +1265,17 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     time.points.this.interval <- sort(unique(c(t[t >= start.interval & t <= end.interval], t.s[t.s >= start.interval & t.s <= end.interval])))
     if(length(time.points.this.interval)<=1){next}
     state <- deSolve::ode(as.vector(init), time.points.this.interval, .clonal_dynamics_odes, parms = parms)
+    # get cell state and death event state trajectories
+    cell.state.traj <- state[,1+(1:length(s[live.index]))]
+    death.state.traj <- state[,(length(s[live.index]) + 2): (2*length(s[live.index])+1)]
+    # append zeros for non-existing clones and order correctly
+    cell.state.traj <- cbind(cell.state.traj, matrix(0, nrow(state), length(zero.index)))
+    cell.state.traj <- cell.state.traj[,order(c(live.index, zero.index))]
+    cell.state.traj <- replace(cell.state.traj, cell.state.traj < 0, 0)
+    death.state.traj <- cbind(death.state.traj, matrix(death.states[zero.index], nrow(state), length(zero.index)))
+    death.state.traj <- death.state.traj[,order(c(live.index, zero.index))]
+    state <- cbind(state[,1], cell.state.traj, death.state.traj)
+    
     output <- rbind(output, state)
     cell.states <- state[nrow(state),1+(1:length(s))]
     death.states <- state[nrow(state),(length(s)+2):(2*length(s)+1)]
@@ -1266,12 +1288,18 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     mdc <- mother.daughter[mother.daughter[,"D"]==(k),]
     cell.states[mdc[2]] <- 1
     cell.states[mdc[1]] <- cell.states[mdc[1]] -1
-    
+    if(cell.states[mdc[1]] < 0){
+      cell.states[mdc[1]] <- 0
+    }
+    live.index <- which(cell.states!=0) # model only clones that actually exist; better as it prevents numerical instability
+    zero.index <- which(cell.states==0)
+    # bundle the parameters in a list
+    parms <- list(N=N, lambda=lambda.ss, delta=delta.ss, s=s[live.index])
     # initial condition for next interval
-    init <- c(cell.states, death.states)
+    init <- c(cell.states[live.index], death.states[live.index])
   }
-  if(any(duplicated(output[,"time"]))){
-    output <- output[-duplicated(output[,"time"]),]
+  if(any(duplicated(output[,1]))){
+    output <- output[-duplicated(output[,1]),]
   }
   
   return(output)

@@ -961,7 +961,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     final.sizes <- cell.states[nrow(cell.states),1+(1:length(s))]
   }
 
-  t.peaks <- cell.states[,"time"][apply(cell.states, 2, function(x){which.max(round(x/10))})[seq(2,1+length(s))]]
+  t.peaks <- cell.states[,1][apply(cell.states, 2, function(x){which.max(round(x/10))})[seq(2,1+length(s))]]
   
   t.peaks <- t.peaks[t.peaks>0]
   # we evaluate the problem step-wise, pausing at the birth dates of each clone and at the time point at which they peak

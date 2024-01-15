@@ -1026,9 +1026,10 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
       
       total.size.of.all.daughters.this.clone <- sum(final.sizes[.get.progeny(mother.daughter, clone)])
       # for each bin size, compute the probability that the mutation ends up in the newly founded daughter cell 
-      daughters.this.clone <- setdiff(.get.progeny(mother.daughter, clone), clone)
+      daughters.this.clone <- setdiff(mother.daughter[mother.daughter[,"M"]==clone,"D"], clone)
       # take only the daughters that are born after the current lower.t
-      daughters.this.clone <- setdiff((1:length(t.s))[t.s[daughters.this.clone] >= lower.t], clone)
+      #daughters.this.clone <- setdiff((1:length(t.s))[t.s[daughters.this.clone] >= lower.t], clone)
+      daughters.this.clone <- setdiff(intersect(daughters.this.clone, (1:length(t.s))[t.s >= lower.t]), clone)
       combinations.of.daughters <- .clonal.combinations(daughters.this.clone)
       if(length(daughters.this.clone) > 0){
         muts.tend[clone,] <- muts.tend[clone,] + sapply(b, function(b){
@@ -1036,7 +1037,8 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
           # expected number of mutations in clone size b if present in the combination of daughters
           res.daughters <- sum(unlist(lapply(combinations.of.daughters,function(comb){
             # total size of the daughter subclones
-            total.size.of.all.daughters.in.comb <- sum(final.sizes[comb])
+            
+            total.size.of.all.daughters.in.comb <- sum(final.sizes[.get.progeny(mother.daughter, comb)])
             
               ## if b is bigger than the selected daughter clones, it may contain mutations present in both the selected clone and the founder population (prob.this.combination)
               

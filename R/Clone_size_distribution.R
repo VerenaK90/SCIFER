@@ -1003,21 +1003,27 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
       clone.size.upper <- cell.states[which(cell.states[,1] >= upper.t)[1], 1 + clone]
       clone.size.tend <- final.sizes[clone]
       # if the clone expands, set its delta according to the selective advantage; otherwise approximate by linear b-d process
-      if(clone.size.upper >= clone.size.now){
+      if(clone.size.upper > clone.size.now){
         delta.this.clone.until.upper <- lambda.ss * s[clone]
         # our computation does an exponential growth approximation, but we model the population overall with a competition model. Hence, if the clone is already in the competition phase, we would overshoot if not correcting the time span that accounts for exponential expansion only.
         time.span.upper <- log(clone.size.upper/clone.size.now)/(lambda.ss - delta.this.clone.until.upper) 
         
+      }else if(clone.size.upper == clone.size.now){
+        delta.this.clone.until.upper <- lambda.ss
+        time.span.upper <- upper.t - lower.t
       }else{
         delta.this.clone.until.upper <- .approximate.delta(lambda.ss, clone.size.now, upper.t - lower.t, cell.states[which(upper.t <= cell.states[,1])[1],1 + length(s) + clone] -
                                                              cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])
         time.span.upper <- upper.t - lower.t
       }
-      if(clone.size.tend >= clone.size.now){
+      if(clone.size.tend > clone.size.now){
         delta.this.clone.until.tend <- lambda.ss * s[clone]
         # our computation does an exponential growth approximation, but we model the population overall with a competition model. Hence, if the clone is already in the competition phase, we would overshoot if not correcting the time span that accounts for exponential expansion only.
         time.span.tend <- log(clone.size.tend/clone.size.now)/(lambda.ss - delta.this.clone.until.tend) 
         
+      }else if(clone.size.tend == clone.size.now){
+        delta.this.clone.until.tend <- lambda.ss
+        time.span.tend <- t.end - lower.t
       }else{
         delta.this.clone.until.tend <- .approximate.delta(lambda.ss, clone.size.now, t.end - lower.t, cell.states[nrow(cell.states),1 + length(s) + clone] -
                                                             cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])
@@ -1111,19 +1117,25 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
       clone.size.upper <- cell.states[which(cell.states[,1] >= upper.t)[1], 1 + clone]
       clone.size.tend <- final.sizes[clone]
       # if the clone expands, set its delta according to the selective advantage; otherwise approximate by linear b-d process
-      if(clone.size.upper >= clone.size.now){
+      if(clone.size.upper > clone.size.now){
         delta.this.clone.until.upper <- lambda.ss * s[clone]
         # our computation does an exponential growth approximation, but we model the population overall with a competition model. Hence, if the clone is already in the competition phase, we would overshoot if not correcting the time span that accounts for exponential expansion only.
         time.span.upper <- log(clone.size.upper/clone.size.now)/(lambda.ss - delta.this.clone.until.upper) 
+      }else if(clone.size.upper == clone.size.now){
+        delta.this.clone.until.upper <- lambda.ss
+        time.span.upper <- upper.t - lower.t
       }else{
         delta.this.clone.until.upper <- .approximate.delta(lambda.ss, clone.size.now, upper.t - lower.t, cell.states[which(upper.t <= cell.states[,1])[1],1 + length(s) + clone] -
                                                              cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])
         time.span.upper <- upper.t - lower.t
       }
-      if(clone.size.tend >= clone.size.now){
+      if(clone.size.tend > clone.size.now){
         delta.this.clone.until.tend <- lambda.ss * s[clone]
         # our computation does an exponential growth approximation, but we model the population overall with a competition model. Hence, if the clone is already in the competition phase, we would overshoot if not correcting the time span that accounts for exponential expansion only.
         time.span.tend <- log(clone.size.tend/clone.size.now)/(lambda.ss - delta.this.clone.until.tend) 
+      }else if(clone.size.tend == clone.size.now){
+        delta.this.clone.until.tend <- lambda.ss
+        time.span.tend <- t.end - lower.t
       }else{
         delta.this.clone.until.tend <- .approximate.delta(lambda.ss, clone.size.now, t.end - lower.t, cell.states[nrow(cell.states),1 + length(s) + clone] -
                                                             cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])

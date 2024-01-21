@@ -98,6 +98,9 @@ p.a.b <- function(lambda, delta, t, a, b, mode="cumulative", approx="highnumbers
       ## Approximate with gamma-distribution, parametrized by mean and variance
       mean.g <- a*exp((lambda-delta)*t)
       var.g <- a*(lambda+delta)/(lambda-delta)*exp((lambda-delta)*t)*(exp((lambda-delta)*t)-1)
+      if(mean.g==0 & var.g==0){
+        return(1)
+      }
       pgamma(b, shape=mean.g^2/var.g, scale=var.g/mean.g)
     }
   }

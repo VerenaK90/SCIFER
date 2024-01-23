@@ -1001,6 +1001,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
       
       ## subtract mutation count from higher interval to get mutations per bin
       new.muts[clone,] <- new.muts[clone,] - c(new.muts[clone,-1],0)
+      new.muts[clone,] <- replace(new.muts[clone,], new.muts[clone,] < 0, 0)
       # I. fate of mutations already present in the system
       clone.size.now <- cell.states[which(cell.states[,1] >= lower.t)[1], 1 + clone]
       clone.size.upper <- cell.states[which(cell.states[,1] >= upper.t)[1], 1 + clone]

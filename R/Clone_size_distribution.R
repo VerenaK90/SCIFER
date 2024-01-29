@@ -852,6 +852,10 @@ histogram.drift <- function(lower.bins.1, n.muts, bin.p1=1, bin.p2, lower.bins.2
     
     weighted.average <- apply(hist.1, 2, function(x){
       
+      if(b==0){
+        return( (x[3]*x[4] + x[5])/(x[3] + 1))
+      }
+      
       (x[3]*x[4]*(1-p.a.b(a=x[1], b=b, lambda=lambda, delta=delta, t=t)) +
          x[5]*(1-p.a.b(a=x[2], b=b, lambda=lambda, delta=delta, t=t)) 
       )/(x[3] + 1)
@@ -1058,7 +1062,8 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                 prob.this.combination.upper <- probability.this.combination(bin.size = c(a[-1], 2*N), clone.size.mother = clone.size.now, n.daughters.present = length(comb), n.daughters.absent = length(daughters.this.clone) - length(comb))
                 
                 # if the mutation ends up in the daughter clones, drift accounts only for the remaining size (b - total.size.of all.daughters.in.comb)
-                res.this.combination <- histogram.drift(lower.bins.1 = a - 1, n.muts = new.muts[clone,], lower.bins.2 = round(b - total.size.of.all.daughters.in.comb), N = N,
+                res.this.combination <- histogram.drift(lower.bins.1 = a - 1, n.muts = new.muts[clone,], 
+                                                        lower.bins.2 = round(b - total.size.of.all.daughters.in.comb), N = N,
                                        bin.p1 = prob.this.combination, bin.p2 = prob.this.combination.upper,
                                        lambda = lambda.ss, delta = delta.this.clone.until.tend, t = time.span.tend)
                 

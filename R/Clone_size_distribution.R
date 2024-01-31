@@ -856,8 +856,8 @@ histogram.drift <- function(lower.bins.1, n.muts, bin.p1=1, bin.p2, lower.bins.2
         return( (x[3]*x[4] + x[5])/(x[3] + 1))
       }
       
-      (x[3]*x[4]*(1-p.a.b(a=x[1], b=b, lambda=lambda, delta=delta, t=t)) +
-         x[5]*(1-p.a.b(a=x[2], b=b, lambda=lambda, delta=delta, t=t)) 
+      (x[3]*x[4]*(1-p.a.b(a=x[1], b=b-1, lambda=lambda, delta=delta, t=t)) +
+         x[5]*(1-p.a.b(a=x[2], b=b-1, lambda=lambda, delta=delta, t=t)) 
       )/(x[3] + 1)
       
     })

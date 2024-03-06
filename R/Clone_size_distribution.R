@@ -817,7 +817,7 @@ histogram.drift <- function(lower.bins.1, n.muts, bin.p1=1, bin.p2, lower.bins.2
         upper.var=2*x[2]*lambda*t
         
         if(x[1]==0){
-          mean.prob.b <- sum(c(x[3]*x[4]*(1- 0),
+          mean.prob.b <- sum(c(0,
                                x[5]*(1 - pgamma(b-1, shape=upper.mean^2/upper.var, scale=upper.var/upper.mean))))/(x[3]+1)
           
         }else{
@@ -1355,6 +1355,94 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     return(list(c(dn, dndeath)))
   })
 }
+
+
+#' Compute the final size of the clones from the input parameters
+#' 
+#' @param N the compartment size
+#' @param lambda.ss cell division rate during homeostasis
+#' @param delta.ss differentiation rate during homeostasis
+#' @param lambda.exp division rate during initial expansion
+#' @param delta.exp loss rate during initial expansion
+#' @param size vector of length j with the input size of the selcted clones. Using exponential growth approximation, the selective advantage, `s` will be computed from `size`. The actual clone sizes will then be computed using the values of `s` and a clonal competition model.
+#' @param t.s vector of length j with the time points at which the selected advantages were introduced
+#' @param mother.daughter mother-daughter relationships. Matrix with 2 columns encoding mother and daughter for each pair
+#' @param t.end the time point of evaluation
+#' @return A vector reporting the system state at the final time point for each clone
+
+
+.compute_actual_size <- function(t.s, mother.daughter, N, lambda.ss, delta.ss, lambda.exp, 
+                                 delta.exp, size, t.end){
+  
+  s <- c(1, 1 - log(size*N)/(lambda.ss*(t.end - t.s[-1])))
+  s[s<0] <- 0
+  s[s>1] <- 1
+  
+  colnames(mother.daughter) <- c("M", "D")
+  clone.order <- data.frame(new.id = 1:length(t.s), old.id = order(t.s))
+  
+  mother.daughter <- rbind(c(1, 1), mother.daughter)
+  mother.daughter <- apply(mother.daughter, 2, function(x) {
+    sapply(x, function(y) {
+      clone.order[clone.order$old.id == y, "new.id"]
+    })
+  })
+  mother.daughter <- mother.daughter[order(mother.daughter[, 
+                                                           "D"]), , drop = F]
+  s <- s[clone.order$new.id]
+  t.s <- sort(t.s)
+  
+  cell.states <- SCIFER:::.forward_dynamics(N = N, init.cells = c(1, 
+                                                                  rep(0, length(s) - 1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, 
+                                            lambda.exp = lambda.exp, delta.exp = delta.exp, s = s, 
+                                            t.s = t.s, mother.daughter = mother.daughter, t = seq(0, 
+                                                                                                  t.end, length.out = 1000))
+  final.sizes <- cell.states[nrow(cell.states), 1 + (1:length(s))]
+  to.remove <- c()
+  for (clone in mother.daughter[, "D"]) {
+    daughters.this.clone <- setdiff(.get.progeny(mother.daughter, 
+                                                 clone), clone)
+    total.size <- sum(cell.states[nrow(cell.states), c(clone, 
+                                                       daughters.this.clone) + 1])
+    if (total.size/N < min.clone.size) {
+      to.remove <- unique(c(to.remove, clone, daughters.this.clone))
+    }
+  }
+  to.keep <- setdiff(1:length(s), to.remove)
+  if (length(to.remove) > 0) {
+    s <- s[-to.remove]
+    t.s <- t.s[-to.remove]
+    final.sizes <- final.sizes[-to.remove]
+    cell.states <- cell.states[, -c(to.remove + 1, (length(s) + 
+                                                      2 + to.remove)), drop = F]
+    mother.daughter <- mother.daughter[-which(mother.daughter[, 
+                                                              "M"] %in% to.remove | mother.daughter[, "D"] %in% 
+                                                to.remove), , drop = F]
+  }
+  if (nrow(mother.daughter) == 1) {
+    return(rep(0, length(t.s) -1))
+  }
+  else {
+    id.conversion <- data.frame(new.id = 1:length(t.s), old.id = mother.daughter[, 
+                                                                                 "D"])
+    mother.daughter <- apply(mother.daughter, 2, function(x) {
+      sapply(x, function(y) {
+        id.conversion[id.conversion$old.id == y, "new.id"]
+      })
+    })
+    cell.states <- SCIFER:::.forward_dynamics(N = N, init.cells = c(1, 
+                                                                    rep(0, length(s) - 1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, 
+                                              lambda.exp = lambda.exp, delta.exp = delta.exp, s = s, 
+                                              t.s = t.s, mother.daughter = mother.daughter, t = seq(0, 
+                                                                                                    t.end, length.out = 1000))
+    final.sizes <- cell.states[nrow(cell.states), 1 + (1:length(s))]
+  }
+  final.sizes.all.clones <- rep(NA, length(s))
+  final.sizes.all.clones[to.keep] <- final.sizes
+  final.sizes.all.clones[to.remove] <- 0
+  return(final.sizes.all.clones)
+}
+
 
 
 #' Determine loss rates from logistic growth

@@ -1420,9 +1420,8 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                                                 to.remove), , drop = F]
   }
   if (nrow(mother.daughter) == 1) {
-    return(rep(0, length(t.s) -1))
-  }
-  else {
+    return(c(N, rep(0, length(to.remove))))
+  }else{
     id.conversion <- data.frame(new.id = 1:length(t.s), old.id = mother.daughter[, 
                                                                                  "D"])
     mother.daughter <- apply(mother.daughter, 2, function(x) {
@@ -1437,7 +1436,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                                                                                                     t.end, length.out = 1000))
     final.sizes <- cell.states[nrow(cell.states), 1 + (1:length(s))]
   }
-  final.sizes.all.clones <- rep(NA, length(s))
+  final.sizes.all.clones <- rep(NA, length(to.keep) + length(to.remover))
   final.sizes.all.clones[to.keep] <- final.sizes
   final.sizes.all.clones[to.remove] <- 0
   return(final.sizes.all.clones)

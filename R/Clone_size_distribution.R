@@ -1436,7 +1436,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                                                                                                     t.end, length.out = 1000))
     final.sizes <- cell.states[nrow(cell.states), 1 + (1:length(s))]
   }
-  final.sizes.all.clones <- rep(NA, length(to.keep) + length(to.remover))
+  final.sizes.all.clones <- rep(NA, length(to.keep) + length(to.remove))
   final.sizes.all.clones[to.keep] <- final.sizes
   final.sizes.all.clones[to.remove] <- 0
   return(final.sizes.all.clones)

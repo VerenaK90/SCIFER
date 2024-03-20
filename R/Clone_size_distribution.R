@@ -1420,8 +1420,10 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     mother.daughter <- mother.daughter[-which(mother.daughter[, 
                                                               "M"] %in% to.remove | mother.daughter[, "D"] %in% 
                                                 to.remove), , drop = F]
+  }else{
+    return(final.sizes)
   }
-  if (nrow(mother.daughter) == 1) {
+  if(nrow(mother.daughter) == 1) {
     return(c(N, rep(0, length(to.remove))))
   }else{
     id.conversion <- data.frame(new.id = 1:length(t.s), old.id = mother.daughter[, 

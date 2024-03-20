@@ -1400,10 +1400,12 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   final.sizes <- cell.states[nrow(cell.states), 1 + (1:length(s))]
   to.remove <- c()
   for (clone in mother.daughter[, "D"]) {
+    ## compute total size of the subclone (subclone + its daughters)
     daughters.this.clone <- setdiff(.get.progeny(mother.daughter, 
                                                  clone), clone)
     total.size <- sum(cell.states[nrow(cell.states), c(clone, 
                                                        daughters.this.clone) + 1])
+    final.sizes[clone] <- total.size
     if (total.size/N < min.clone.size) {
       to.remove <- unique(c(to.remove, clone, daughters.this.clone))
     }
@@ -1435,7 +1437,17 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                                               t.s = t.s, mother.daughter = mother.daughter, t = seq(0, 
                                                                                                     t.end, length.out = 1000))
     final.sizes <- cell.states[nrow(cell.states), 1 + (1:length(s))]
+    
+    ## compute total size of the subclone (subclone + its daughters)
+    for (clone in mother.daughter[, "D"]) {
+      daughters.this.clone <- setdiff(.get.progeny(mother.daughter, 
+                                                   clone), clone)
+      total.size <- sum(cell.states[nrow(cell.states), c(clone, 
+                                                         daughters.this.clone) + 1])
+      final.sizes[clone] <- total.size
+    }
   }
+
   final.sizes.all.clones <- rep(NA, length(to.keep) + length(to.remove))
   final.sizes.all.clones[to.keep] <- final.sizes
   final.sizes.all.clones[to.remove] <- 0

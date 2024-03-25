@@ -1396,7 +1396,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                                                                   rep(0, length(s) - 1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, 
                                             lambda.exp = lambda.exp, delta.exp = delta.exp, s = s, 
                                             t.s = t.s, mother.daughter = mother.daughter, t = seq(0, 
-                                                                                                  t.end, length.out = 1000))
+                                                                                                  t.end, length.out = 100))
   final.sizes <- cell.states[nrow(cell.states), 1 + (1:length(s))]
   to.remove <- c()
   for (clone in mother.daughter[, "D"]) {
@@ -1437,7 +1437,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                                                                     rep(0, length(s) - 1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, 
                                               lambda.exp = lambda.exp, delta.exp = delta.exp, s = s, 
                                               t.s = t.s, mother.daughter = mother.daughter, t = seq(0, 
-                                                                                                    t.end, length.out = 1000))
+                                                                                                    t.end, length.out = 100))
     final.sizes <- cell.states[nrow(cell.states), 1 + (1:length(s))]
     
     ## compute total size of the subclone (subclone + its daughters)

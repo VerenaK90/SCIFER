@@ -920,7 +920,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   })
   mother.daughter <- mother.daughter[order(mother.daughter[,"D"]),,drop=F]
 
-  s <- s[clone.order$new.id]
+  s <- s[clone.order$old.id]
   t.s <- sort(t.s)
   
   # analyze the population dynamics and identify the time points at which individual clones peak
@@ -1389,7 +1389,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
   })
   mother.daughter <- mother.daughter[order(mother.daughter[, 
                                                            "D"]), , drop = F]
-  s <- s[clone.order$new.id]
+  s <- s[clone.order$old.id]
   t.s <- sort(t.s)
   
   cell.states <- SCIFER:::.forward_dynamics(N = N, init.cells = c(1, 

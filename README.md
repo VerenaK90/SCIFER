@@ -47,7 +47,7 @@ devtools::install_github("VerenaK90/SCIFER", ref="paper")
 
 If you want to install the vignette, run
 
-devtools::install.github("VerenaK90/SCIFER/tree/paper", ref="paper", build_vignettes=TRUE). The vignette can then be viewed via vignette("Vignette", "SCIFER"). The package including its vignette can be installed within 10-15 minutes given that python, R and pyABC have been installed.
+devtools::install_github("VerenaK90/SCIFER/tree", ref="paper", build_vignettes=TRUE). The vignette can then be viewed via vignette("Vignette", "SCIFER"). The package including its vignette can be installed within 10-15 minutes given that python, R and pyABC have been installed.
 
 ## License
 

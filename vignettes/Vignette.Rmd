@@ -16,9 +16,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette gives an overview on function modalities provided in the R package SCIFER. SCIFER predicts variant accumulation in growing and homeostatic tissues that evolve neutrally or via clonal selection. Expected site frequency spectra can be assessed with analytical expressions or with stochastic simulations of variant accumulation. We will first compare the results of the analytical expressions and stochastic simulations. Second, we will introduce how SCIFER can be used for parameter estimation from real data.  
+This vignette gives an overview on function modalities provided in the R package SCIFER. SCIFER predicts variant accumulation in growing and homeostatic tissues that evolve neutrally or via clonal selection. Expected site frequency spectra (SFS) can be assessed with analytical expressions or with stochastic simulations of variant accumulation. We will first compare the results of the analytical expressions and stochastic simulations. Second, we will introduce how SCIFER can be used for parameter estimation from real data.  
 
-## Predict VAF distributions in neutrally evolving tissues with SCIFER
+## Predicting VAF distributions in neutrally evolving tissues with SCIFER
 
 Let's begin by loading SCIFER and predicting the VAF distribution of a tissue sustained by 1,000 cells upon exponential expansion. We assume that there is no cell death during expansion and that on average two mutations are acquired per division (amounting to 1 per daughter cell), and focus on VAFs between 1% and 100% - roughly covering the range that can be experimentally assessed.
 
@@ -51,14 +51,15 @@ t.end <- 10 # time of interest
 
 SFS.neutral.homeostasis <- mutational.burden(lambda.exp = lambda, delta.exp = delta, mu = mu, b = clone.sizes.of.interest, N = N, lambda.ss = lambda.ss, t.end = t.end)
 
-plot(1/vafs.of.interest, SFS.neutral.homeostasis, xlab="1/VAF", ylab="Cumulative number of variants", type="l", col="red")
-lines(1/vafs.of.interest, SFS.neutral.expansion, xlab="1/VAF", ylab="Cumulative number of variants", type="l")
+plot(1/vafs.of.interest, SFS.neutral.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.01"))
+lines(1/vafs.of.interest, SFS.neutral.expansion,  ylab="Cumulative number of variants", type="l")
 legend("topleft", lty=c(1,1), col=c("red", "black"), legend=c("Homeoastasis", "Expansion"), cex = 0.5)
 ```
 
 We note that the linear increase in cumulative variants gets lost during tissue homeostasis. Due to neutral drift, the cumulative distribution of variants now bends upwards at small VAFs. 
 
-## Simulate VAF distributions in neutrally evolving tissues with SCIFER
+## Simulating VAF distributions in neutrally evolving tissues with SCIFER
 
 Until now we have used analytical expressions for the average SFS. Now, we will compare our results to stochastic simulations, employing the function `gillespie.sim.s.p` provided by SCIFER. `gillespie.sim.s.p` allows not only the simulation of stem cell dynamics, but also of progenitor cells. For now, we focus on stem cell dynamics only, hence setting the progenitor parameters (`lambda.p`and `delta.p`) to zero. 
 
@@ -86,7 +87,7 @@ Let's first have a look at the phylogenetic trees:
 ape::plot.phylo(sim.trees.neutral[[1]], main="Tree after expansion", show.tip.label = F)
 ape::plot.phylo(sim.trees.neutral[[2]], main="Tree after 10 years of homeostasis", show.tip.label = F)
 ```
-During homeostasis, additional cell divisions render the tree longer and denser. We are interested in their effect on the site frequency spectrum. To this end, we compute the VAFs in these trees, using the function `get_vaf_from_tree`. 
+During homeostasis, additional cell divisions render the tree longer and denser. We are interested in the effect on the site frequency spectrum. To this end, we compute the VAFs in these trees, using the function `get_vaf_from_tree`. 
 ```{r}
 SFS.sim <- lapply(sim.trees.neutral, function(tree){
   vafs <- get_vaf_from_tree(tree)
@@ -98,18 +99,19 @@ SFS.sim <- lapply(sim.trees.neutral, function(tree){
 
 When comparing the stochastically simulated VAFS to the analytical prediction, we find a good agreement: 
 ```{r}
-plot(1/vafs.of.interest, SFS.neutral.homeostasis, xlab="1/VAF", ylab="Cumulative number of variants", type="l", col="red")
-lines(1/vafs.of.interest, SFS.neutral.expansion, xlab="1/VAF", ylab="Cumulative number of variants", type="l")
-lines(1/vafs.of.interest, SFS.sim[[1]], xlab="1/VAF", ylab="Cumulative number of variants", type="l", lty=2, col="black")
-lines(1/vafs.of.interest, SFS.sim[[2]], xlab="1/VAF", ylab="Cumulative number of variants", type="l", lty=2, col="red")
+plot(1/vafs.of.interest, SFS.neutral.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.01"))
+lines(1/vafs.of.interest, SFS.neutral.expansion, type="l")
+lines(1/vafs.of.interest, SFS.sim[[1]], type="l", lty=2, col="black")
+lines(1/vafs.of.interest, SFS.sim[[2]], type="l", lty=2, col="red")
 legend("topleft", lty=c(1,1, 2, 2), col=c("red", "black", "red", "black"), legend=c("Homeoastasis (analytical)", "Expansion (analytical)",
                                                                                     "Homeostasis (sim)", "Expansion (sim)"), cex = 0.5)
 ```
 
 
-## Predict VAF distributions in tissues with clonal selection with SCIFER
+## Predicting VAF distributions in tissues with clonal selection with SCIFER
 
-Next, we look into a more complex scenario and introduce a clone after 5 years, which expands with a selective advantage of 50% for 10 years. To generate analytical predictions, we use the function`mutational.burden.with.selection`.
+Next, we look into a more complex scenario and introduce a clone after 5 years, which expands with a selective advantage of 50% for 10 years. To generate analytical predictions, we use the function `mutational.burden.with.selection`.
 
 ```{r}
 mu <- 2 # mutation per division
@@ -134,7 +136,7 @@ axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05), labels = c("0.5", "0.25",
 lines(1/vafs.of.interest, SFS.neutral.expansion, type="l")
 legend("topleft", lty=c(1,1), col=c("red", "black"), legend=c("Homeoastasis", "Expansion"), cex = 0.5)
 ```
-We find that subclonal selection manifests itself in a shoulder in the cumulative distribution (red curve). Again, we compare the analytical prediction to stochastic simulations: 
+We find that subclonal selection manifests itself as a shoulder in the cumulative distribution (red curve). Again, we compare the analytical prediction to stochastic simulations: 
 
 ```{r}
 set.seed(132342429)
@@ -142,7 +144,7 @@ N = 1000 # 1000 stem cells
 NP = 0 # no progenitor cells
 mut.rate = 1 # 1 variants per daughter cell, amounting to 1 per division
 time.max = 15 # 15 years
-time.samples = c(0, 15) # report after expansion and at 1 year of life
+time.samples = c(0, 15) # report after expansion and at 15 years of life
 mutation.mode="Binomial"
 mut.rate.D = 0 # no driver mutations
 s.shape = 50# selective advantage of 0.5 
@@ -185,9 +187,60 @@ legend("topleft", lty=c(1,1, 2, 2), col=c("red", "black", "red", "black"), legen
                                                                                     "Homeostasis (sim)", "Expansion (sim)"), cex = 0.5)
 ```
 
+### VAF distributions in a tissue with two selected clone 
+
+We now push our simulations one step further and introduce a second selected clone. There are two possible topologies: either, the second clone emerges within the first selected clone, a scenario which we call "linear" evolution, or the second clone emerges in normal cells, a scenario which we call "branched" evolution. Let's first investigate an example of linear evolution. We define the mother-daughter relationships between the clones in the matrix `mother.daughter`; each row corresponds to one clone, where we consider normal cells (1) as the founder clone. To model two selected clones, we consider 10^5 stem cells overall that divide 10 times a year each. We introduce the first clone after 10 years and the second clone after 35 years, and read out the VAF distribution at age 50. The first clone reduces cell loss by a factor of 0.97, whereas the second clone reduces cell loss by a factor of 0.925, hence expanding faster. Note that, for the implementation of multiple clones, we have to provide birth dates and selective advantages for all clones in the system, including the founder clone.
+
+```{r}
+mu <- 2 # mutation per division
+lambda.exp <- 1 # division rate during expansion
+delta.exp <- 0 # death rate during expansion
+N <- 10^5 # cell count during homeostasis
+lambda.ss <- 10 # division rate during homeostasis
+t.end <- 50 # time of interest
+clone.sizes.of.interest <- 2*vafs.of.interest*N 
+mother.daughter <- matrix(c(1,2,
+                           2,3), byrow=T, ncol=2)
+t.s <- c(0, 10,35) # time of driver acquisition
+s <- c(1, 0.97, 0.925) # selective advantage
+
+SFS.selection.2.clones.homeostasis <- mutational.burden.multiclone(mu = mu, N = N, lambda.exp = lambda, delta.exp = delta, b = clone.sizes.of.interest,lambda.ss = lambda.ss, t.end = t.end, t.s = t.s, s = s, mother.daughter = mother.daughter)
+
+plot(1/vafs.of.interest, SFS.selection.2.clones.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.01"))
+
+plot(1/vafs.of.interest, SFS.selection.2.clones.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n", main="zoom",
+     xlim=c(0, 20), ylim=c(0, 1000))
+```
+We notice a second, small shoulder at around 0.125 VAF, corresponding to the second selected clone. Let us now compare this simulation to a situation where the two clones evolve via branched evolution (notice the change in the mother-daughter relationship):  
+
+```{r}
+mu <- 2 # mutation per division
+lambda.exp <- 1 # division rate during expansion
+delta.exp <- 0 # death rate during expansion
+N <- 10^5 # cell count during homeostasis
+lambda.ss <- 10 # division rate during homeostasis
+t.end <- 50 # time of interest
+clone.sizes.of.interest <- 2*vafs.of.interest*N 
+mother.daughter <- matrix(c(1,2,
+                           1,3), byrow=T, ncol=2)
+t.s <- c(0, 10,35) # time of driver acquisition
+s <- c(1, 0.97, 0.925) # selective advantage
+
+SFS.selection.2.clones.homeostasis <- mutational.burden.multiclone(mu = mu, N = N, lambda.exp = lambda, delta.exp = delta, b = clone.sizes.of.interest,lambda.ss = lambda.ss, t.end = t.end, t.s = t.s, s = s, mother.daughter = mother.daughter)
+
+plot(1/vafs.of.interest, SFS.selection.2.clones.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n")
+axis(side = 1, at = c(1/0.5, 1/0.25, 1/0.125, 1/0.05, 1/0.01), labels = c("0.5", "0.25", "0.125", "0.05", "0.01"))
+
+plot(1/vafs.of.interest, SFS.selection.2.clones.homeostasis, xlab="VAF", ylab="Cumulative number of variants", type="l", col="red", xaxt="n", main="zoom",
+     xlim=c(0, 20), ylim=c(0, 1500))
+```
+Again, the second clone constitutes an additional shoulder in the VAF distribution. Notice that the step is higher than in the linear topology, as the mutations defining the founder cell of the second selected clone were accumulated over 35 years in the normal cell population, whereas in the linear topology they were accumulated over 25 years in the first selected clone. 
+
+
 ### Effect of sequencing
 
-Until now we have looked into "actual" site frequency spectra. However, sequencing data does not measure VAFs exactly. Hence, we look into the effect of whole genome sequencing on the measured distribution. SCIFER provides the function `simulated.data`to add binomial noise to a given VAF histogram. To apply `simulated.data`, we hence first compute a histogram from the cumulative distribution, using bins of width 1%.
+Until now we have looked into "actual" site frequency spectra. However, sequencing data does not measure VAFs exactly. To assess the effect of whole genome sequencing on the measured distribution, we turn back to our example of a single selected clone. SCIFER provides the function `simulated.data` to add binomial noise to a given VAF histogram. To apply `simulated.data`, we first approximate the density distribution from the cumulative distribution, by computing a histogram with bins of width 1%.
 
 ```{r}
 SFS.selection.homeostasis.density <- SFS.selection.homeostasis - c(SFS.selection.homeostasis[-1], 0)  
@@ -221,13 +274,13 @@ Note that the simulated data level off at around 0.025 VAF. This is expected, as
 
 ## Parameter estimation
 
-SCIFER can be used in conjunction with pyABC (Klinger et al., Bioinformatics, 2018) to estimate model parameters of drift and selection from deep WGS data. We provided exemplary data from 65 years-old individual A1 (Körber et al., Detecting and quantifying clonal selection in somatic mosaicism) to explain how parameter estimation can be invoked. Let's briefly look at the data:
+SCIFER can be used in conjunction with pyABC (Klinger et al., Bioinformatics, 2018) to estimate model parameters of drift and selection from deep WGS data. We provide exemplary data from 65 years-old individual A1 (Körber et al., Detecting and quantifying clonal selection in somatic mosaicism) to explain how parameter estimation can be invoked. Let's briefly look at the data:
 
 ```{r}
 hist(snvs$A1$VAF, breaks=100, xlab="VAF", ylab="Number of variants")
 ```
 
-A subclonal peak at around 0.25 VAF is already visually apparanet in the VAF histogram. We now ask if there is evidence for clonal selection and whether we can estimate the parameters (division rate, stem cell number, selective advantage, mutation rate) that shape the observed distribution. To this end, we use the function `mutational.burden.with.selection`from SCIFER in conjunction with approximate Bayesian computation to predict the shape of the distribution for a given parameter set, and to compare it to the measured data. 
+A subclonal peak at around 0.25 VAF is already visually apparent in the VAF histogram. We now ask if there is evidence for clonal selection and whether we can estimate the parameters (division rate, stem cell number, selective advantage, mutation rate) that shape the observed distribution. To this end, we use the function `mutational.burden.with.selection` from SCIFER in conjunction with approximate Bayesian computation to predict the shape of the distribution for a given parameter set, and to compare it to the measured data. 
 
 We compare model and data on the cumulative VAF distribution, truncated at 5% VAF, as this is less prone to noise fluctuations than the density distribution. Let's begin by summarizing the data:
 
@@ -236,7 +289,7 @@ age <- 65*365
 vafs.of.interest <- seq(0.05, 1, 0.01) # define the VAFs at which the cumulative mutation count is to be evaluated
 depth <- 90 # the data were generated with 90x sequencing
 
-# filtere variants with < 3 mutant reads and with a read depth < 10 or > 300: 
+# filter variants with < 3 mutant reads and with a read depth < 10 or > 300: 
 vafs <- lapply(snvs, function(x){
   x[x$Depth>=10 & x$Depth<=300  & as.numeric(x$varCounts)>=3, ]$VAF
 })
@@ -250,7 +303,7 @@ cumulated.vaf.count.mean <- lapply(vafs, function(y){
 mySumStatData <- cumulated.vaf.count.mean
 ```
 
-pyABC is a python-based algorithm, but can read in model, summary statistics and distance measures from an R script. To run the below code-chunk, please install python3 and pyabc. We begin by defining the prior probabilities in python. We use uniform priors for most parameters and log-uniform priors for `N` and `lambda_ss`. To this end, we define uniform priors on the log-scale for these 2 parameters and transform the values back when evaluating the model (see below). Moreover, we define relative values for the time point of the driver mutation acquisition, `t_s`, and the associated selective advantage, `s`. Note that we - by choice - define the selective advantage as a reduction in cell loss. The relative priors range between 0 and 1/0.99, but will be transformed into absolute values between lower and upper bounds giving selected clones between 1% and 100% of the tissue in the model function below. The rationale for restricting clone sizes to a range between 1% and 100% is to facilitate clonal detection by restricting the parameter set to a range where selected clones are likely to fall into the measurable range. The measurable range is in our case 5% to 100% VAF - hence corresponding to clones of size 10% to 100%. Thus, if we choose `s` and `t_s` such that the clone reaches a size between 1% and 100%, selection should be easily identifiable, while still leaving the possibility to detect solutions with neutral evolution. 
+pyABC is a python-based algorithm, but can read in model, summary statistics and distance measures from an R script. To run the below code-chunk, please install python3 and pyabc. We begin by defining the prior probabilities in python. We use uniform priors for most parameters and log-uniform priors for `N` and `lambda_ss`. To this end, we define uniform priors on the log-scale for these 2 parameters and transform the values back when evaluating the model (see below). Moreover, we define relative values for the time point of the driver mutation acquisition, `t_s`, and the associated selective advantage, `s`. Note that we - by choice - define the selective advantage as a reduction in cell loss. The relative priors range between 0 and 1/0.99, but will be transformed into absolute values between lower and upper bounds that correspond to selected clones between 1% and 100% of the tissue in the model function below. The rationale for restricting clone sizes to a range between 1% and 100% is to facilitate clonal detection by restricting the parameter set to a range where selected clones are likely to fall into the measurable range. The measurable range is in our case 5% to 100% VAF - hence corresponding to clones of size 10% to 100%. Thus, if we choose `s` and `t_s` such that the clone reaches a size between 1% and 100%, selection should be easily identifiable, while still leaving the possibility to detect solutions with neutral evolution. 
 
 ```{python}
 
@@ -268,7 +321,7 @@ prior = Distribution(mu=RV("uniform", 0.1, 9.9), offset=RV("uniform", 0, 10),  N
 
 ```
 
-Next, we define the model function in R. The model function takes a list containing the parameters as input, transform log-scaled and relative parameter values into absolute parameter values and then computes the expected SFS. Finally, the model adds sequencing noise to the predicted SFS.
+Next, we define the model function in R. The model function takes a list containing the parameters as input, transforms log-scaled and relative parameter values into absolute parameter values and then computes the expected SFS. Finally, the model adds sequencing noise to the predicted SFS.
 
 ```{r}
 myModel <- function(parms){

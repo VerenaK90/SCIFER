@@ -349,9 +349,10 @@ Extract.info.from.vcf <- function(vcf, info='readcounts', type='snvs', mutationc
     vcf$vcf <- as.data.frame(vcf$vcf)
     if(type=='snvs'){
       if(info=='readcounts'){
-        readcounts <- t(sapply(vcf$vcf[,sample.col.mpileup], function(x){
-          x <- strsplit(x, split=':')[[1]]
-          x <- x[length(x)]
+        readcounts <- t(apply(vcf$vcf[,c("FORMAT", sample.col.mpileup)], 1, function(x){
+          ad.col <- which(strsplit(x[1], split=":")[[1]]=="AD")
+          x <- strsplit(x[2], split=':')[[1]]
+          x <- x[ad.col]
           x <- as.numeric(strsplit(x, split=',')[[1]])
           x <- c(x[1], max(x[c(2:length(x))]))
           x
@@ -362,9 +363,10 @@ Extract.info.from.vcf <- function(vcf, info='readcounts', type='snvs', mutationc
         return(readcounts)
       }
       if(info=='depth'){
-        depth <- sapply(vcf$vcf[,sample.col.mpileup], function(x){
-          x <- strsplit(x, split=':')[[1]]
-          x <- x[length(x)]
+        depth <- apply(vcf$vcf[,c("FORMAT", sample.col.mpileup)], 1, function(x){
+          ad.col <- which(strsplit(x[1], split=":")[[1]]=="AD")
+          x <- strsplit(x[2], split=':')[[1]]          
+          x <- x[ad.col]
           x <- as.numeric(strsplit(x, split=',')[[1]])
           x <- c(x[1], max(x[c(2:length(x))]))
           sum(x)
@@ -373,9 +375,10 @@ Extract.info.from.vcf <- function(vcf, info='readcounts', type='snvs', mutationc
         return(depth)
       }
       if(info=='VAF'){
-        vaf <- sapply(vcf$vcf[,sample.col.mpileup], function(x){
-          x <- strsplit(x, split=':')[[1]]
-          x <- x[length(x)]
+        vaf <- apply(vcf$vcf[,c("FORMAT", sample.col.mpileup)], 1, function(x){
+          ad.col <- which(strsplit(x[1], split=":")[[1]]=="AD")
+          x <- strsplit(x[2], split=':')[[1]]
+          x <- x[ad.col]
           x <- as.numeric(strsplit(x, split=',')[[1]])
           x <- c(x[1], max(x[c(2:length(x))]))
           x[2]/sum(x)

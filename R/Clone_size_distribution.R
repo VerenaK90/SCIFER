@@ -900,10 +900,11 @@ probability.this.combination <- function(bin.size, clone.size.mother, n.daughter
 #' @param s vector of selective advantages associated with driver mutations
 #' @param b minimal clone size of interest. Number or vector. 
 #' @param mother.daughter a matrix containing the mother (1st column) - daughter (2nd column) relationships between the subclones 
+#' @param return.mode should the mutation spectrum be returned for the `bulk` or `per_clone`? In the latter, a matrix is returned where mutations acquired in particular clones are returned row-wise. Default `bulk`.
 #' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario with 2 nested clonal selections (clone starts growing at t.s >t.ss and grows with a selective advantage s; clone 2 starts. Returns the number of mutations present in at least b cells
 #' @export
 
-mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, s, mother.daughter, b, min.clone.size = 0.05, accuracy.a = 0.05){
+mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, s, mother.daughter, b, min.clone.size = 0.05, accuracy.a = 0.05, return.mode = "bulk"){
   
   # add column names to the mother-daughter relationship matrix
   colnames(mother.daughter) <- c("M", "D")
@@ -1189,8 +1190,12 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     
   }
   
-  muts.tend <- colSums(muts.tend + new.muts)
-  muts.tend
+  if(return.mode=="per_clone"){
+    return(muts.tend + new.muts)
+  }else if(return.mode == "bulk"){
+    muts.tend <- colSums(muts.tend + new.muts)
+    muts.tend
+  }
 }
 
 

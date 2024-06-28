@@ -16,7 +16,8 @@ mutational.burden.multiclone(
   mother.daughter,
   b,
   min.clone.size = 0.05,
-  accuracy.a = 0.05
+  accuracy.a = 0.05,
+  return.mode = "bulk"
 )
 }
 \arguments{
@@ -39,6 +40,8 @@ mutational.burden.multiclone(
 \item{mother.daughter}{a matrix containing the mother (1st column) - daughter (2nd column) relationships between the subclones}
 
 \item{b}{minimal clone size of interest. Number or vector.}
+
+\item{return.mode}{should the mutation spectrum be returned for the \code{bulk} or \code{per_clone}? In the latter, a matrix is returned where mutations acquired in particular clones are returned row-wise. Default \code{bulk}.}
 }
 \value{
 This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario with 2 nested clonal selections (clone starts growing at t.s >t.ss and grows with a selective advantage s; clone 2 starts. Returns the number of mutations present in at least b cells

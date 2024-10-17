@@ -11,11 +11,11 @@
 
 \item{NP}{integer; number of progenitor cells at homeostasis}
 
-\item{mut.rate}{integer; number of mutations per cell division and daughter cell}
+\item{mut.rate}{integer; number of mutations per cell division and daugther cell}
 
 \item{time.max}{time of simulation}
 
-\item{parms.steady}{named vector of steady state parameters; must contain "lambda.s"/"lambda.p" the stem and progenitor division rate; "delta.s"/"delta.p" the stem and progenitor loss rate and "alpha.s" the stem cell differentiation rate}
+\item{parms.steady}{named vector of steady state parameters; must contain lambda.s/lambda.p the stem and progenitor division rate; delta.s/delta.p the stem and progenitor loss rate and alpha.s the stem cell differentiation rate}
 }
 \value{
 returns the state list; initialized with a single stem cell and a single mutation

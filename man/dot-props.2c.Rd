@@ -9,7 +9,7 @@
 \arguments{
 \item{cell.count}{a vector with cell numbers (S, P)}
 
-\item{parms}{a named parameter vector containing the rates of cell division ("lambda.s"/"lambda.p") and differentiation ("alpha.s") or loss ("delta.s"/"delta.p"), where "s" and "p" indicate stem and progenitor cells, respectively}
+\item{parms}{a named parameter vector containing the rates of cell division (lambda.s/lambda.p) and differentiation (alpha.s) or loss (delta.s/delta.p), where "s" and "p" indicate stem and progenitor cells, respectively}
 }
 \value{
 the propensities of the possible reactions

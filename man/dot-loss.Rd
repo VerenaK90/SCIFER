@@ -9,7 +9,7 @@
 \arguments{
 \item{cell.type}{integer; which cell type is dividing? 1, stem cell, 2, progenitor cell}
 
-\item{tree}{object of class phylo; the current tree. Needs the following additional list elements: \code{tip.class}, specifying the cell type and \code{sel.adv.}, specifying the selective advantage of each tip}
+\item{tree}{object of class phylo; the current tree. Needs the following additional list elements: tip.class, specifying the cell type and sel.adv., specifying the selective advantage of each tip}
 
 \item{nr}{number of reactions to simulate; defaults to 1}
 }

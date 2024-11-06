@@ -55,6 +55,7 @@
 #' @param tau tau leaping parameter: how many steps should be merged during homeostasis? Defaults to 1, no leaping.
 #' @param report.at.f frequency of a selected clone at which the simulation should be stopped. Defaults to NA - don't stop at a certain frequency. 
 #' @return a list of state.lists at the desired time samples
+#' @export
 
 gillespie.sim.s.t1.t2 <- function(parms.exp, parms.steady, time.max=50, time.samples=c(0, 5, 25, 50), N=1000, NT1=8000, NT2=2000, report.at.f = NA,
                               mut.rate = 3, mutation.mode="Binomial", driver.mode="random", t.driver = NA, mother = NULL, mut.rate.D = 0, s.shape = 1.5, s.rate = 35, tau = 1){

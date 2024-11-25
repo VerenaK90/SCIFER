@@ -19,7 +19,7 @@
 \arguments{
 \item{cell.type}{the cell type that is to divide (1, stem cell; 2, progenitor cell)}
 
-\item{tree}{object of class phylo; the current tree. Needs the following additional list elements: \code{tip.class}, specifying the cell type and \code{sel.adv.}, specifying the selective advantage of each tip}
+\item{tree}{object of class phylo; the current tree. Needs the following additional list elements: tip.class, specifying the cell type and sel.adv., specifying the selective advantage of each tip}
 
 \item{mut.rate.D}{integer; driver mutation rate per cell division}
 
@@ -31,7 +31,7 @@
 
 \item{mut.rate}{average number of neutral mutations per daughter cell and division}
 
-\item{symmetric}{logical, is the division a symmetric division (2 new daughter cells) or an asymmetric division (1 daughter cell differentiates); defaults to T}
+\item{symmetric}{is the division a symmetric division (2 new daughter cells) or an asymmetric division (1 daughter cell differentiates); defaults to T}
 
 \item{nr}{number of reactions to simulate; defaults to 1}
 }

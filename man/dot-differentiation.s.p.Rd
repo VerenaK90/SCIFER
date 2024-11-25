@@ -4,12 +4,14 @@
 \alias{.differentiation.s.p}
 \title{Cell differentiation}
 \usage{
-.differentiation.s.p(tree, nr = 1)
+.differentiation.s.p(tree, nr = 1, type = 2)
 }
 \arguments{
 \item{tree}{object of class phylo; the current tree. Needs the following additional list elements: tip.class, specifying the cell type and sel.adv., specifying the selective advantage of each tip}
 
 \item{nr}{number of reactions to simulate; defaults to 1}
+
+\item{type}{the cell type in which the stem cell differentiates; defaults to 2}
 }
 \value{
 the updated tree

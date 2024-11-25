@@ -2,7 +2,7 @@
 #' 
 #' This function computes the propensities for a linear, hierarchical system of cell division, death and differentiation
 #' @param cell.count a vector with cell numbers (S, P)
-#' @param parms a named parameter vector containing the rates of cell division ("lambda.s"/"lambda.p") and differentiation ("alpha.s") or loss ("delta.s"/"delta.p"), where "s" and "p" indicate stem and progenitor cells, respectively
+#' @param parms a named parameter vector containing the rates of cell division (lambda.s/lambda.p) and differentiation (alpha.s) or loss (delta.s/delta.p), where "s" and "p" indicate stem and progenitor cells, respectively
 #' @return the propensities of the possible reactions
 #' @export
 
@@ -29,7 +29,7 @@
       return(res)
     }
     
-
+    
   })
 }
 
@@ -55,9 +55,9 @@
 #' This function initializes the simulation
 #' @param N integer; number of stem cells at homeostasis
 #' @param NP integer; number of progenitor cells at homeostasis
-#' @param mut.rate integer; number of mutations per cell division and daughter cell
+#' @param mut.rate integer; number of mutations per cell division and daugther cell
 #' @param time.max time of simulation
-#' @param parms.steady named vector of steady state parameters; must contain "lambda.s"/"lambda.p" the stem and progenitor division rate; "delta.s"/"delta.p" the stem and progenitor loss rate and "alpha.s" the stem cell differentiation rate
+#' @param parms.steady named vector of steady state parameters; must contain lambda.s/lambda.p the stem and progenitor division rate; delta.s/delta.p the stem and progenitor loss rate and alpha.s the stem cell differentiation rate
 #' @return returns the state list; initialized with a single stem cell and a single mutation
 #' @export
 
@@ -68,7 +68,8 @@
                tip.label=1,
                Nnode=1,
                tip.class=1,
-               sel.adv.=1)
+               sel.adv.=1,
+               clone.id=1)
   
   class(tree) <- "phylo"
   
@@ -79,13 +80,13 @@
 #' 
 #' Simulate division of a cell together with acquisition of neutral and driver mutations
 #' @param cell.type the cell type that is to divide (1, stem cell; 2, progenitor cell)
-#' @param tree object of class phylo; the current tree. Needs the following additional list elements: `tip.class`, specifying the cell type and `sel.adv.`, specifying the selective advantage of each tip
+#' @param tree object of class phylo; the current tree. Needs the following additional list elements: tip.class, specifying the cell type and sel.adv., specifying the selective advantage of each tip
 #' @param mut.rate.D integer; driver mutation rate per cell division
 #' @param s.shape shape parameter of the gamma distribution from which the selective advantage of a new driver is drawn
 #' @param s.rate rate parameter of the gamma distribution from which the selective advantage of a new driver is drawn
 #' @param mutation.mode should the number of new mutations be "constant" or "Binomial"ly distributed?
 #' @param mut.rate average number of neutral mutations per daughter cell and division
-#' @param symmetric logical, is the division a symmetric division (2 new daughter cells) or an asymmetric division (1 daughter cell differentiates); defaults to T
+#' @param symmetric is the division a symmetric division (2 new daughter cells) or an asymmetric division (1 daughter cell differentiates); defaults to T
 #' @param nr number of reactions to simulate; defaults to 1
 #' @return the updated tree
 
@@ -98,8 +99,12 @@
   ## the living cells are the tips
   living.cells <- tree$tip.label[tree$tip.class==cell.type]
   living.cells.sel.adv <- tree$sel.adv.[tree$tip.class==cell.type]
-
-  dividing.cell <- sample(living.cells, nr, prob = living.cells.sel.adv/sum(living.cells.sel.adv))
+  
+  if(length(living.cells)==1){
+    dividing.cell = living.cells
+  }else{
+    dividing.cell <- sample(living.cells, nr, prob = living.cells.sel.adv/sum(living.cells.sel.adv))
+  }
   
   ## sample the new mutations
   n.mut <- as.vector(sapply(1:nr, function(x){.mutation.acquisition(mut.rate = mut.rate, mutation.mode = mutation.mode)}))
@@ -109,9 +114,10 @@
   
   ## add the 2 daughters together with their mutations and selective advantage
   
-  new.tree <- phangorn::add.tips(tree = tree, tips = max(tree$tip.label) + seq(1, 2*nr), where = dividing.cell, edge.length = n.mut)
+  new.tree <- add.tips(tree = tree, tips = max(tree$tip.label) + seq(1, 2*nr), where = dividing.cell, edge.length = n.mut)
   
   new.tree$sel.adv. <- c(tree$sel.adv., c(tree$sel.adv.[dividing.cell]+new.s[1:nr], tree$sel.adv.[dividing.cell]+new.s[(nr+1):(2*nr)]))
+  new.tree$clone.id <- c(tree$clone.id, c(tree$clone.id[dividing.cell], tree$clone.id[dividing.cell]))
   
   if(symmetric){
     new.tree$tip.class <- c(tree$tip.class, rep(cell.type, 2*nr))
@@ -119,13 +125,14 @@
     new.tree$tip.class <- c(tree$tip.class, rep(c(cell.type, 2), each=nr))
   }
   
-
+  
   ## remove the dividing cell from the tips
   
   new.tree$sel.adv. <- new.tree$sel.adv.[-which(new.tree$tip.label %in% dividing.cell)]
   new.tree$tip.class <- new.tree$tip.class[-which(new.tree$tip.label %in% dividing.cell)]
+  new.tree$clone.id <- new.tree$clone.id[-which(new.tree$tip.label %in% dividing.cell)]
   
-  new.tree <- ape::drop.tip(new.tree, dividing.cell, trim.internal = T, collapse.singles = F)
+  new.tree <- drop.tip(new.tree, dividing.cell, trim.internal = T, collapse.singles = F)
   
   new.tree$tip.label <- sort(setdiff(new.tree$edge[,2], new.tree$edge[,1]))
   
@@ -140,18 +147,23 @@
 #' Simulate differentiation of a stem cell into a progenitor cell
 #' @param tree object of class phylo; the current tree. Needs the following additional list elements: tip.class, specifying the cell type and sel.adv., specifying the selective advantage of each tip
 #' @param nr number of reactions to simulate; defaults to 1
+#' @param type the cell type in which the stem cell differentiates; defaults to 2
 #' @return the updated tree
 
-.differentiation.s.p <- function(tree, nr=1){
+.differentiation.s.p <- function(tree, nr=1, type = 2){
   
   ## the living stem cells are the tips of class 1
   living.cells <- tree$tip.label[tree$tip.class==1]
-
+  
   ## randomly sample a stem cell that differentiates
-  differentiating.cell <- sample(living.cells, nr)
+  if(length(living.cells)==1){
+    differentiating.cell = living.cells
+  }else{
+    differentiating.cell <- sample(living.cells, nr)
+  }
   
   ## update the cell's type to progenitor cell
-  tree$tip.class[tree$tip.label %in% differentiating.cell] <- 2
+  tree$tip.class[tree$tip.label %in% differentiating.cell] <- type
   
   return(tree)
   
@@ -161,7 +173,7 @@
 #' 
 #' Simulate loss of a stem cell or a progenitor cell
 #' @param cell.type integer; which cell type is dividing? 1, stem cell, 2, progenitor cell
-#' @param tree object of class phylo; the current tree. Needs the following additional list elements: `tip.class`, specifying the cell type and `sel.adv.`, specifying the selective advantage of each tip
+#' @param tree object of class phylo; the current tree. Needs the following additional list elements: tip.class, specifying the cell type and sel.adv., specifying the selective advantage of each tip
 #' @param nr number of reactions to simulate; defaults to 1
 #' @return the updated tree
 
@@ -169,14 +181,19 @@
   
   ## the living cells are the tips
   living.cells <- tree$tip.label[tree$tip.class==cell.type]
-  dying.cell <- sample(living.cells, nr)
-
+  if(length(living.cells) == 1){
+    dying.cell = living.cells
+  }else{
+    dying.cell <- sample(living.cells, nr)
+  }
+  
   ## remove the dying cell from the tips
   new.tree <- tree
   new.tree$sel.adv. <- new.tree$sel.adv.[-which(new.tree$tip.label %in% dying.cell)]
   new.tree$tip.class <- new.tree$tip.class[-which(new.tree$tip.label %in% dying.cell)]
+  new.tree$clone.id <- new.tree$clone.id[-which(new.tree$tip.label %in% dying.cell)]
   
-  new.tree <- ape::drop.tip(new.tree, dying.cell, trim.internal = T, collapse.singles = F)
+  new.tree <- drop.tip(new.tree, dying.cell, trim.internal = T, collapse.singles = F)
   
   new.tree$tip.label <- sort(setdiff(new.tree$edge[,2], new.tree$edge[,1]))
   tree <- new.tree
@@ -211,6 +228,7 @@
   
   return(s)   
 }
+
 
 
 #' Tree simulation

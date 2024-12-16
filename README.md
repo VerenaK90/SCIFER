@@ -57,4 +57,4 @@ SCI&Phi;ER is run under an [MIT License](https://web.archive.org/web/20160411224
 
 ## Contact
 
-Verena Körber (v.koerber@dkfz.de)
+Verena Körber (verena.korber@ndcls.ox.ac.uk)

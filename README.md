@@ -43,11 +43,11 @@ Körber et al., Detecting and quantifying clonal selection in somatic mosaics.
 
 ## Installation
 
-devtools::install_github("VerenaK90/SCIFER", ref="paper")
+devtools::install_github("VerenaK90/SCIFER")
 
 If you want to install the vignette, please ensure that you have installed python, pyABC and the R packages ggplot2, reshape2, ggridges and HDInterval. Then run
 
-devtools::install_github("VerenaK90/SCIFER", ref="paper", build_vignettes=TRUE).
+devtools::install_github("VerenaK90/SCIFER", build_vignettes=TRUE).
 
 The vignette can then be viewed by typing `vignette("Vignette", "SCIFER")`. The package including its vignette can be installed within 10-15 minutes given that python, R and pyABC have been installed.
 

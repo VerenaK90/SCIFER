@@ -39,7 +39,7 @@ SCI&Phi;ER can be run in conjunction with python3 and pyABC (?0.12.6) to estimat
 
 ## Citation
 
-Körber et al., Detecting and quantifying clonal selection in somatic mosaics.
+Körber et al., Detecting and quantifying clonal selection in somatic stem cells. *Nature Genetics* **57**, 1718-1729 (2025). DOI: https://doi.org/10.1038/s41588-025-02217-y.
 
 ## Installation
 

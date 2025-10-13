@@ -178,7 +178,11 @@ mutations.noncritical.bd <- function(lambda, delta, t.end, mu, n.min, N0=1, N=N,
                                                                                density.a.b.exact(lambda, delta, t.end-t, 1, n.min))
     
   }
-  total <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n.min=n.min, n.max=n.max, rel.tol = .Machine$double.eps^0.1)$value
+  if(lambda > 0.1){
+    total <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n.min=n.min, n.max=n.max, rel.tol = .Machine$double.eps^0.25)$value
+  }else{
+    total <- integrate(integrand, lower=0, upper=t.end, mu=mu, lambda=lambda, delta=delta, n.min=n.min, n.max=n.max, rel.tol = .Machine$double.eps^0.1)$value
+  }
   total
 }
 
@@ -532,7 +536,7 @@ mutational.burden.selection.expansion=function(mu,lambda,delta,s,t.s,t.end, b){
 }
 
 #########################################################################################################################################
-####### Suprecritical b-d-process followed by critical b-d-process with selection of an advantageous subclone; subclonal mutation acquired during homeostasis
+####### Supercritical b-d-process followed by critical b-d-process with selection of an advantageous subclone; subclonal mutation acquired during homeostasis
 #########################################################################################################################################
 
 #' Mutation accumulation during exponential expansion followed by homeostasis with clonal selection. 
@@ -887,6 +891,191 @@ probability.this.combination <- function(bin.size, clone.size.mother, n.daughter
 #########################################################################################################################################
 ####### Multi-clone problem
 #########################################################################################################################################
+#' Mutation accumulation during exponential expansion 
+#' 
+#' @param mu mutation rate per cell division
+#' @param lambda.exp proliferation rate during expansion
+#' @param delta.exp loss rate during expansion
+#' @param t.end end point (starting from homeostasis)
+#' @param t.s vector of time points at which selective advantages are acquired.
+#' @param s vector of selective advantages associated with driver mutations
+#' @param b minimal clone size of interest. Number or vector. 
+#' @param mother.daughter a matrix containing the mother (1st column) - daughter (2nd column) relationships between the subclones 
+#' @param return.mode should the mutation spectrum be returned for the `bulk` or `per_clone`? In the latter, a matrix is returned where mutations acquired in particular clones are returned row-wise. Default `bulk`.
+#' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario with 2 nested clonal selections (clone starts growing at t.s >t.ss and grows with a selective advantage s; clone 2 starts. Returns the number of mutations present in at least b cells
+#' @export
+
+mutational.burden.expansion.multiclone <- function(mu, lambda.exp, delta.exp, t.end, t.s, s, mother.daughter, b, min.clone.size = 0.05, accuracy.a = 0.05, return.mode = "bulk"){
+  
+  # add column names to the mother-daughter relationship matrix
+  colnames(mother.daughter) <- c("M", "D")
+  
+  # order clones by time point of appearance
+  clone.order <- data.frame(new.id = 1:length(t.s), 
+                            old.id = order(t.s))
+  
+  mother.daughter <- rbind(c(1,1), mother.daughter)
+  mother.daughter <- apply(mother.daughter, 2, function(x){
+    sapply(x, function(y){
+      clone.order[clone.order$old.id == y,"new.id"]
+    })
+  })
+  mother.daughter <- mother.daughter[order(mother.daughter[,"D"]),,drop=F]
+  
+  s <- s[clone.order$old.id]
+  t.s <- sort(t.s)
+  
+  ## size of the selected clones at t.end
+  final.sizes <- exp((lambda.exp - s*delta.exp)*(t.end-t.s))
+  N <- sum(final.sizes)
+  
+  # neglect clones smaller than the minimal clone size; only filter daughter cells; do iteratively!
+  
+  to.remove <- c()
+  for(clone in mother.daughter[,"D"]){
+    daughters.this.clone <- setdiff(.get.progeny(mother.daughter, clone), clone)
+    total.size <- sum(final.sizes[c(clone, daughters.this.clone)])
+    # if the total size of this clone is smaller than the minimal clone size, remove the clone and all it's daughters
+    if(total.size/N < min.clone.size){
+      to.remove <- unique(c(to.remove, clone, daughters.this.clone))
+    }
+  }
+  
+  if(length(to.remove)>0){
+    s <- s[-to.remove]
+    t.s <- t.s[-to.remove]
+    final.sizes <- final.sizes[-to.remove]
+    mother.daughter <- mother.daughter[-which(mother.daughter[,"M"] %in% to.remove |
+                                                mother.daughter[,"D"] %in% to.remove),,drop=F]
+  }
+  if(nrow(mother.daughter)==1){
+    return(mutations.noncritical.bd(lambda = lambda.exp, delta = delta.exp, 
+                                    t.end = t.end, mu = mu, 
+                                    n.min = a, N0=1, 
+                                    N=exp((lambda.exp - delta.exp)*t.end), mode="approx")
+    )
+  }else{
+    
+    # rename daughters in order of appearance
+    id.conversion <- data.frame(new.id = 1:length(t.s), 
+                                old.id = mother.daughter[,"D"])
+    
+    mother.daughter <- apply(mother.daughter, 2, function(x){
+      sapply(x, function(y){
+        id.conversion[id.conversion$old.id == y,"new.id"]
+      })
+    })
+    
+    final.sizes <- exp((lambda.exp - s*delta.exp)*(t.end-t.s))
+  }
+  N <- sum(final.sizes)
+  
+  # we evaluate the problem step-wise, pausing at the birth dates of each clone 
+  time.points.of.interest <- sort(t.s)
+  time.points.of.interest <- setdiff(time.points.of.interest, c( t.end))
+  # store the site frequency spectra of mutations generated in each clone in a matrix
+  muts.tend <- matrix(0, nrow=length(t.s), ncol=length(b))
+  
+  # discretize the site frequency spectrum
+  if((log10(N)-1)>2){
+    a <- c(1, 10, 25, 50, 75, 10^seq(2, log10(N)-1, 0.05))
+  }else{
+    a <- c(1, 10, 25, 50, 75, 100)
+  }
+  a <- sort(unique(round(c(a, seq(0.105, 1, accuracy.a)*N))))
+  
+  clones <- 1:length(s)
+  
+  
+  for(timepoint in 1:(length(time.points.of.interest))){
+    lower.t <- time.points.of.interest[timepoint]
+    upper.t <- c(time.points.of.interest[-1], t.end)[timepoint]
+    
+    # iterate through all clones
+    for(clone in clones){
+      # only proceed if clone exists
+      if(t.s[clone] >= upper.t){next}
+      clone.size.now <- exp((lambda.exp - delta.exp*s[clone])*(lower.t-t.s[clone]))
+      delta.this.clone <- delta.exp*s[clone]
+      time.span.tend <- t.end - lower.t
+      
+      total.size.of.all.daughters.this.clone <- sum(final.sizes[.get.progeny(mother.daughter, clone)])
+      # for each bin size, compute the probability that the mutation ends up in the newly founded daughter cell 
+      daughters.this.clone <- setdiff(mother.daughter[mother.daughter[,"M"]==clone,"D"], clone)
+      # take only the daughters that are born after the current upper.t
+      daughters.this.clone <- setdiff(intersect(daughters.this.clone, (1:length(t.s))[t.s >= upper.t]), clone)
+      combinations.of.daughters <- .clonal.combinations(daughters.this.clone)
+      if(length(daughters.this.clone) > 0){
+        # size of the clone when daughter is born
+        clone.size.mother = exp((lambda.exp - delta.this.clone)*(upper.t - t.s[clone]))
+        
+        muts.tend[clone,] <- muts.tend[clone,] + sapply(b, function(b){
+          # if(b >= total.size.of.all.daughters.this.clone){return(0)}
+          # expected number of mutations in clone size b if present in the combination of daughters
+          res.daughters <- sum(unlist(lapply(combinations.of.daughters,function(comb){
+            # total size of the daughter subclones
+            
+            total.size.of.all.daughters.in.comb <- sum(final.sizes[.get.progeny(mother.daughter, comb)])
+            
+            
+            # if the mutation ends up in the daughter clones, drift accounts only for the remaining size (b - total.size.of all.daughters.in.comb)
+            
+            
+            integrand <- function(t, mu, lambda, delta, n){
+              
+              prob.this.combination <- (exp((lambda - delta)*(upper.t - t))/clone.size.mother)^length(comb)*
+                (1 -  exp((lambda - delta)*(upper.t - t))/clone.size.mother)^(length(daughters.this.clone) - length(comb))
+              
+              if(n==0){
+                clone.size.now*prob.this.combination*mu*lambda*exp((lambda - delta)*(t - lower.t))
+              }else{
+                clone.size.now*prob.this.combination*mu*lambda*exp((lambda - delta)*(t - lower.t))*((density.a.b.exact(lambda, delta, t.end-t, 1, N*100) -                                                                                                   
+                                                                                                       density.a.b.exact(lambda, delta, t.end-t, 1, n))/log(.beta(lambda, delta, t.end-t)))
+                
+              }
+            }
+            ## total number of mutations acquired during exponential growth that survived:
+            
+            res.this.combination <- integrate(integrand, lower=lower.t, upper=upper.t, mu=mu, lambda=lambda.exp, delta=delta.this.clone, n=max(0,b-total.size.of.all.daughters.in.comb))$value
+          })))
+          # expected number of mutations in clone size b if not present in any daughter
+          
+          
+          integrand <- function(t, mu, lambda, delta, n){
+            prob.no.daughter <- (exp((lambda - delta)*(upper.t - t))/clone.size.mother)^0*
+              (1 - exp((lambda - delta)*(upper.t - t))/clone.size.mother)^length(daughters.this.clone)
+            
+            clone.size.now*prob.no.daughter*mu*lambda*exp((lambda - delta)*(t - lower.t))/log(.beta(lambda, delta, t.end-t))*(density.a.b.exact(lambda, delta, t.end-t, 1, 100*N) - 
+                                                                                                                                    density.a.b.exact(lambda, delta, t.end-t, 1, n))
+            
+          }
+          
+          ## total number of mutations acquired during exponential growth that survived:
+          res.no.daughter <- integrate(integrand, lower=lower.t, upper=upper.t, mu=mu, lambda=lambda.exp, delta=delta.this.clone, n=b)$value
+          
+          res.daughters + res.no.daughter
+          
+        })
+        
+      }else{
+        muts.tend[clone,] <- muts.tend[clone,] + sapply(b, function(b){
+          mutations.noncritical.bd(lambda = lambda.exp, delta = delta.this.clone, n.min = b, t.end = time.span.tend, mu = mu, N0 = clone.size.now,
+                                   N = final.sizes[clone])
+        })
+      }
+      
+      
+    }
+  }
+  
+  if(return.mode=="per_clone"){
+    return(muts.tend )
+  }else if(return.mode == "bulk"){
+    muts.tend <- colSums(muts.tend)
+    muts.tend
+  }
+}
+
 
 #' Mutation accumulation during exponential expansion followed by homeostasis. 
 #' 
@@ -1151,7 +1340,7 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
                                                             cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])
         time.span.tend <- t.end - lower.t
       }
-      if(round(lambda.ss, digits=10) != round(delta.this.clone.until.upper, digits=10)){
+      if(round(lambda.ss, digits=5) != round(delta.this.clone.until.upper, digits=5)){
         if(upper.t == t.end){
           new.muts[clone,] <- sapply(b, function(b){
             mutations.noncritical.bd(lambda = lambda.ss, delta = delta.this.clone.until.upper, n.min = b, t.end = time.span.tend, mu = mu, N0 = clone.size.now,
@@ -1541,6 +1730,320 @@ mutational.burden.multiclone <- function(mu, N, lambda.exp, delta.exp, lambda.ss
     clone.ids[x]
   })
   return(combinations)
+}
+
+#########################################################################################################################################
+####### Hierarchy problem
+#########################################################################################################################################
+
+#' Mutation accumulation during exponential expansion followed by homeostasis in a hierarchical tissue with 2 compartments. 
+#' 
+#' @param mu mutation rate per cell division
+#' @param N vector wtih population sizes
+#' @param lambda.exp proliferation rate during expansion
+#' @param delta.exp loss rate during expansion
+#' @param lambda.ss vector with proliferation and loss rates during homeostasis
+#' @param t.end end point (starting from homeostasis)
+#' @param t.s vector of time points at which selective advantages are acquired.
+#' @param s matrix of selective advantages associated with driver mutations; columns correspond to clones, rows correspond to compartment
+#' @param b minimal clone size of interest. Number or vector. 
+#' @param mother.daughter a matrix containing the mother (1st column) - daughter (2nd column) relationships between the subclones 
+#' @param return.mode should the mutation spectrum be returned for the `bulk` or `per_clone`? In the latter, a matrix is returned where mutations acquired in particular clones are returned row-wise. Default `bulk`.
+#' @return This function returns an approximation by first computing the distribution at the transition time within intervals, then averaging the fate of each interval during homeostasis and adding newly acquired mutations in a scenario with 2 nested clonal selections (clone starts growing at t.s >t.ss and grows with a selective advantage s; clone 2 starts. Returns the number of mutations present in at least b cells
+#' @export
+
+mutational.burden.multiclone.hierarchy <- function(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, t.s, s, mother.daughter, b, min.clone.size = 0.05, accuracy.a = 0.05, return.mode = "bulk"){
+  
+  # add column names to the mother-daughter relationship matrix
+  colnames(mother.daughter) <- c("M", "D")
+  
+  # order clones by time point of appearance
+  clone.order <- data.frame(new.id = 1:length(t.s), 
+                            old.id = order(t.s))
+  
+  mother.daughter <- rbind(c(1,1), mother.daughter)
+  mother.daughter <- apply(mother.daughter, 2, function(x){
+    sapply(x, function(y){
+      clone.order[clone.order$old.id == y,"new.id"]
+    })
+  })
+  mother.daughter <- mother.daughter[order(mother.daughter[,"D"]),,drop=F]
+  
+  s <- s[,clone.order$old.id]
+  t.s <- sort(t.s)
+  
+  # analyze the population dynamics and identify the time points at which individual clones peak
+  # initiate the system with N normal cells and 0 mutant cells. The system also returns the total number of death events, which will be needed below to compute drift during contraction
+  cell.states <- .forward_dynamics(N = N, init.cells = c(1, rep(0, length(s)-1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, lambda.exp = lambda.exp,
+                                   delta.exp = delta.exp, s = s, t.s = t.s, mother.daughter = mother.daughter, t = seq(0, t.end, length.out = 1000))
+  final.sizes <- cell.states[nrow(cell.states),1+(1:length(s))]
+  
+  # neglect clones smaller than the minimal clone size; only filter daughter cells; do iteratively!
+  
+  to.remove <- c()
+  for(clone in mother.daughter[,"D"]){
+    daughters.this.clone <- setdiff(.get.progeny(mother.daughter, clone), clone)
+    total.size <- sum(cell.states[nrow(cell.states),c(clone, daughters.this.clone) + 1])
+    # if the total size of this clone is smaller than the minimal clone size, remove the clone and all it's daughters
+    if(total.size/N < min.clone.size){
+      to.remove <- unique(c(to.remove, clone, daughters.this.clone))
+    }
+  }
+  
+  if(length(to.remove)>0){
+    s <- s[-to.remove]
+    t.s <- t.s[-to.remove]
+    final.sizes <- final.sizes[-to.remove]
+    cell.states <- cell.states[,-c(to.remove + 1, (length(s)+2+to.remove)),drop=F]
+    mother.daughter <- mother.daughter[-which(mother.daughter[,"M"] %in% to.remove |
+                                                mother.daughter[,"D"] %in% to.remove),,drop=F]
+  }
+  if(nrow(mother.daughter)==1){
+    return(mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, t.end, b, accuracy.a = accuracy.a))
+  }else{
+    
+    # rename daughters in order of appearance
+    id.conversion <- data.frame(new.id = 1:length(t.s), 
+                                old.id = mother.daughter[,"D"])
+    
+    mother.daughter <- apply(mother.daughter, 2, function(x){
+      sapply(x, function(y){
+        id.conversion[id.conversion$old.id == y,"new.id"]
+      })
+    })
+    
+    cell.states <- .forward_dynamics(N = N, init.cells = c(1, rep(0, length(s)-1)), lambda.ss = lambda.ss, delta.ss = lambda.ss, lambda.exp = lambda.exp,
+                                     delta.exp = delta.exp, s = s, t.s = t.s, mother.daughter = mother.daughter, t = seq(0, t.end, length.out = 1000))
+    final.sizes <- cell.states[nrow(cell.states),1+(1:length(s))]
+  }
+  
+  t.peaks <- cell.states[,1][apply(cell.states, 2, function(x){which.max(round(x/10))})[seq(2,1+length(s))]]
+  
+  t.peaks <- t.peaks[t.peaks>0]
+  # we evaluate the problem step-wise, pausing at the birth dates of each clone and at the time point at which they peak
+  time.points.of.interest <- sort(c(t.s, t.peaks))
+  time.points.of.interest <- setdiff(time.points.of.interest, c(0, t.end))
+  # store the site frequency spectra of mutations generated in each clone in a matrix
+  muts.tend <- matrix(0, nrow=length(t.s), ncol=length(b))
+  # implement a function that returns the evolution of mutations already present in a cell population if one daughter cell becomes positively selected
+  
+  # discretize the site frequency spectrum
+  if((log10(N)-1)>2){
+    a <- c(1, 10, 25, 50, 75, 10^seq(2, log10(N)-1, 0.05))
+  }else{
+    a <- c(1, 10, 25, 50, 75, 100)
+  }
+  a <- sort(unique(round(c(a, seq(0.105, 1, accuracy.a)*N))))
+  #a <- sort(unique(c(a, b)))
+  
+  clones <- 1:length(s)
+  
+  ## initialize new.muts
+  new.muts <- matrix(0, nrow=length(t.s), ncol=length(a)) # define a earlier, fine-grained histogram for computation
+  new.muts[1,] <- mutational.burden(mu, N, lambda.exp, delta.exp, lambda.ss, time.points.of.interest[1], a)
+  for(timepoint in 1:(length(time.points.of.interest))){
+    
+    lower.t <- time.points.of.interest[timepoint]
+    upper.t <- c(time.points.of.interest[-1], t.end)[timepoint]
+    
+    # new mutations acquired between lower.t and upper.t
+    # iterate through all clones
+    for(clone in clones){
+      # only proceed if clone exists
+      if(t.s[clone] > lower.t){next}
+      
+      ## subtract mutation count from higher interval to get mutations per bin
+      new.muts[clone,] <- new.muts[clone,] - c(new.muts[clone,-1],0)
+      new.muts[clone,] <- replace(new.muts[clone,], new.muts[clone,] < 0, 0)
+      # I. fate of mutations already present in the system
+      clone.size.now <- cell.states[which(cell.states[,1] >= lower.t)[1], 1 + clone]
+      clone.size.upper <- cell.states[which(cell.states[,1] >= upper.t)[1], 1 + clone]
+      clone.size.tend <- final.sizes[clone]
+      # if the clone expands, set its delta according to the selective advantage; otherwise approximate by linear b-d process
+      if(clone.size.upper > clone.size.now){
+        delta.this.clone.until.upper <- lambda.ss * s[clone]
+        # our computation does an exponential growth approximation, but we model the population overall with a competition model. Hence, if the clone is already in the competition phase, we would overshoot if not correcting the time span that accounts for exponential expansion only.
+        time.span.upper <- log(clone.size.upper/clone.size.now)/(lambda.ss - delta.this.clone.until.upper) 
+        
+      }else if(clone.size.upper == clone.size.now){
+        delta.this.clone.until.upper <- lambda.ss
+        time.span.upper <- upper.t - lower.t
+      }else{
+        delta.this.clone.until.upper <- .approximate.delta(lambda.ss, clone.size.now, upper.t - lower.t, cell.states[which(upper.t <= cell.states[,1])[1],1 + length(s) + clone] -
+                                                             cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])
+        time.span.upper <- upper.t - lower.t
+      }
+      if(clone.size.tend > clone.size.now){
+        delta.this.clone.until.tend <- lambda.ss * s[clone]
+        # our computation does an exponential growth approximation, but we model the population overall with a competition model. Hence, if the clone is already in the competition phase, we would overshoot if not correcting the time span that accounts for exponential expansion only.
+        time.span.tend <- log(clone.size.tend/clone.size.now)/(lambda.ss - delta.this.clone.until.tend) 
+        
+      }else if(clone.size.tend == clone.size.now){
+        delta.this.clone.until.tend <- lambda.ss
+        time.span.tend <- t.end - lower.t
+      }else{
+        delta.this.clone.until.tend <- .approximate.delta(lambda.ss, clone.size.now, t.end - lower.t, cell.states[nrow(cell.states),1 + length(s) + clone] -
+                                                            cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])
+        time.span.tend <- t.end - lower.t
+      }
+      
+      total.size.of.all.daughters.this.clone <- sum(final.sizes[.get.progeny(mother.daughter, clone)])
+      # for each bin size, compute the probability that the mutation ends up in the newly founded daughter cell 
+      daughters.this.clone <- setdiff(mother.daughter[mother.daughter[,"M"]==clone,"D"], clone)
+      # take only the daughters that are born after the current lower.t
+      #daughters.this.clone <- setdiff((1:length(t.s))[t.s[daughters.this.clone] >= lower.t], clone)
+      daughters.this.clone <- setdiff(intersect(daughters.this.clone, (1:length(t.s))[t.s >= lower.t]), clone)
+      combinations.of.daughters <- .clonal.combinations(daughters.this.clone)
+      if(length(daughters.this.clone) > 0){
+        muts.tend[clone,] <- muts.tend[clone,] + sapply(b, function(b){
+          # if(b >= total.size.of.all.daughters.this.clone){return(0)}
+          # expected number of mutations in clone size b if present in the combination of daughters
+          res.daughters <- sum(unlist(lapply(combinations.of.daughters,function(comb){
+            # total size of the daughter subclones
+            
+            total.size.of.all.daughters.in.comb <- sum(final.sizes[.get.progeny(mother.daughter, comb)])
+            
+            ## if b is bigger than the selected daughter clones, it may contain mutations present in both the selected clone and the founder population (prob.this.combination)
+            
+            if(b >= total.size.of.all.daughters.in.comb){ 
+              
+              prob.this.combination <- probability.this.combination(bin.size = a, clone.size.mother = clone.size.now, n.daughters.present = length(comb), n.daughters.absent = length(daughters.this.clone) - length(comb))
+              prob.this.combination.upper <- probability.this.combination(bin.size = c(a[-1], 2*N), clone.size.mother = clone.size.now, n.daughters.present = length(comb), n.daughters.absent = length(daughters.this.clone) - length(comb))
+              
+              # if the mutation ends up in the daughter clones, drift accounts only for the remaining size (b - total.size.of all.daughters.in.comb)
+              res.this.combination <- histogram.drift(lower.bins.1 = a - 1, n.muts = new.muts[clone,], 
+                                                      lower.bins.2 = round(b - total.size.of.all.daughters.in.comb), N = N,
+                                                      bin.p1 = prob.this.combination, bin.p2 = prob.this.combination.upper,
+                                                      lambda = lambda.ss, delta = delta.this.clone.until.tend, t = time.span.tend)
+              
+              
+            }else{ ## mutations present in at least b cells, where b <= f.sel. --> cumulative distribution from founder cell population +
+              
+              prob.this.combination <- probability.this.combination(bin.size = a, clone.size.mother = clone.size.now, n.daughters.present = length(comb), n.daughters.absent = length(daughters.this.clone) - length(comb))
+              prob.this.combination.upper <- probability.this.combination(bin.size = c(a[-1], 2*N), clone.size.mother = clone.size.now, n.daughters.present = length(comb), n.daughters.absent = length(daughters.this.clone) - length(comb))
+              
+              # if the mutation ends up in the daughter clones, drift accounts only for the remaining size (b - total.size.of all.daughters.in.comb)
+              res.this.combination <- histogram.drift(lower.bins.1 = a - 1, n.muts = new.muts[clone,], lower.bins.2 = 0, N = N,
+                                                      bin.p1 = prob.this.combination, bin.p2 = prob.this.combination.upper,
+                                                      lambda = lambda.ss, delta = delta.this.clone.until.tend, t = time.span.tend)
+              
+              
+            }
+            
+            res.this.combination
+          })))
+          # expected number of mutations in clone size b if not present in any daughter
+          
+          prob.no.daughter <- probability.this.combination(bin.size = a, clone.size.mother = clone.size.now, n.daughters.present = 0, n.daughters.absent = length(daughters.this.clone))
+          prob.no.daughter.upper <- probability.this.combination(bin.size = c(a[-1], 2*N), clone.size.mother = clone.size.now, n.daughters.present = 0, n.daughters.absent = length(daughters.this.clone))
+          
+          res.no.daughter <- histogram.drift(lower.bins.1 = a, n.muts = new.muts[clone,], lower.bins.2 = b, N = N,
+                                             bin.p1 = prob.no.daughter, bin.p2 = prob.no.daughter.upper,
+                                             lambda = lambda.ss, delta = delta.this.clone.until.tend, t = time.span.tend)
+          
+          res.daughters + res.no.daughter
+          
+        })
+      }else{ # if b is smaller than the selected daughter clones, all mutations must stem from the current mother clone 
+        muts.tend[clone,] <- muts.tend[clone,] + sapply(b, function(b){
+          
+          #  if(b >= total.size.of.all.daughters.this.clone){return(0)}
+          res <- histogram.drift(lower.bins.1 = a, n.muts = new.muts[clone,], lower.bins.2 = b, N = N,
+                                 bin.p1 = 1, bin.p2 = 1,
+                                 lambda = lambda.ss, delta = delta.this.clone.until.tend, t = time.span.tend)
+          
+          res
+          
+        })
+      }
+      
+      
+    }
+    
+    # II. new mutations introduced in this time.interval
+    
+    if(upper.t == t.end){
+      new.muts <- matrix(0, nrow=length(t.s), ncol=length(b)) # define a earlier, fine-grained histogram for computation
+    }
+    
+    for(clone in clones){
+      
+      if(t.s[clone] > lower.t){next}
+      
+      # I. fate of mutations already present in the system
+      clone.size.now <- cell.states[which(cell.states[,1] >= lower.t)[1], 1 + clone]
+      clone.size.upper <- cell.states[which(cell.states[,1] >= upper.t)[1], 1 + clone]
+      clone.size.tend <- final.sizes[clone]
+      # if the clone expands, set its delta according to the selective advantage; otherwise approximate by linear b-d process
+      if(clone.size.upper > clone.size.now){
+        delta.this.clone.until.upper <- lambda.ss * s[clone]
+        # our computation does an exponential growth approximation, but we model the population overall with a competition model. Hence, if the clone is already in the competition phase, we would overshoot if not correcting the time span that accounts for exponential expansion only.
+        time.span.upper <- log(clone.size.upper/clone.size.now)/(lambda.ss - delta.this.clone.until.upper) 
+      }else if(clone.size.upper == clone.size.now){
+        delta.this.clone.until.upper <- lambda.ss
+        time.span.upper <- upper.t - lower.t
+      }else{
+        delta.this.clone.until.upper <- .approximate.delta(lambda.ss, clone.size.now, upper.t - lower.t, cell.states[which(upper.t <= cell.states[,1])[1],1 + length(s) + clone] -
+                                                             cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])
+        time.span.upper <- upper.t - lower.t
+      }
+      if(clone.size.tend > clone.size.now){
+        delta.this.clone.until.tend <- lambda.ss * s[clone]
+        # our computation does an exponential growth approximation, but we model the population overall with a competition model. Hence, if the clone is already in the competition phase, we would overshoot if not correcting the time span that accounts for exponential expansion only.
+        time.span.tend <- log(clone.size.tend/clone.size.now)/(lambda.ss - delta.this.clone.until.tend) 
+      }else if(clone.size.tend == clone.size.now){
+        delta.this.clone.until.tend <- lambda.ss
+        time.span.tend <- t.end - lower.t
+      }else{
+        delta.this.clone.until.tend <- .approximate.delta(lambda.ss, clone.size.now, t.end - lower.t, cell.states[nrow(cell.states),1 + length(s) + clone] -
+                                                            cell.states[which(cell.states[,1] >= lower.t)[1], 1 + length(s) + clone])
+        time.span.tend <- t.end - lower.t
+      }
+      if(round(lambda.ss, digits=5) != round(delta.this.clone.until.upper, digits=5)){
+        if(upper.t == t.end){
+          new.muts[clone,] <- sapply(b, function(b){
+            mutations.noncritical.bd(lambda = lambda.ss, delta = delta.this.clone.until.upper, n.min = b, t.end = time.span.tend, mu = mu, N0 = clone.size.now,
+                                     N = final.sizes[clone])
+          })
+          new.muts[clone,b>=final.sizes[clone]] <- 0
+        }else{
+          new.muts[clone,] <- sapply(a, function(b){
+            mutations.noncritical.bd(lambda = lambda.ss, delta = delta.this.clone.until.upper, n.min = b, t.end = time.span.upper, mu = mu, N0 = clone.size.now,
+                                     N = clone.size.upper)
+          })
+          new.muts[clone,a>=clone.size.upper] <- 0
+        }
+        
+        new.muts[clone,][new.muts[clone,]<0] <- 0 # for very small expansions, our approximation can yield negative results; take them out
+      }else{
+        time.span.upper <- upper.t - lower.t
+        if(upper.t == t.end){
+          new.muts[clone,] <- sapply(b, function(b){
+            if(b > 2*clone.size.now){return(0)}
+            mutations.during.steady.state(lambda = lambda.ss, n.min = b, t.end = time.span.tend, N = clone.size.now, mu = mu)
+          })
+          new.muts[clone,b>=final.sizes[clone]] <- 0
+        }else{
+          new.muts[clone,] <- sapply(a, function(b){
+            if(b > 2*clone.size.now){return(0)}
+            mutations.during.steady.state(lambda = lambda.ss, n.min = b, t.end = time.span.upper, N = clone.size.now, mu = mu)
+          })
+          new.muts[clone,a>=clone.size.upper] <- 0
+        }
+        
+        new.muts[clone,][new.muts[clone,]<0] <- 0 # for very small expansions, our approximation can yield negative results; take them out
+      }
+      
+    }
+    
+  }
+  
+  if(return.mode=="per_clone"){
+    return(muts.tend + new.muts)
+  }else if(return.mode == "bulk"){
+    muts.tend <- colSums(muts.tend + new.muts)
+    muts.tend
+  }
 }
 
 

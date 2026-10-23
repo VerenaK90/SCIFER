@@ -114,7 +114,7 @@
   
   ## add the 2 daughters together with their mutations and selective advantage
   
-  new.tree <- add.tips(tree = tree, tips = max(tree$tip.label) + seq(1, 2*nr), where = dividing.cell, edge.length = n.mut)
+  new.tree <- phangorn::add.tips(tree = tree, tips = max(tree$tip.label) + seq(1, 2*nr), where = dividing.cell, edge.length = n.mut)
   
   new.tree$sel.adv. <- c(tree$sel.adv., c(tree$sel.adv.[dividing.cell]+new.s[1:nr], tree$sel.adv.[dividing.cell]+new.s[(nr+1):(2*nr)]))
   new.tree$clone.id <- c(tree$clone.id, c(tree$clone.id[dividing.cell], tree$clone.id[dividing.cell]))
@@ -132,7 +132,7 @@
   new.tree$tip.class <- new.tree$tip.class[-which(new.tree$tip.label %in% dividing.cell)]
   new.tree$clone.id <- new.tree$clone.id[-which(new.tree$tip.label %in% dividing.cell)]
   
-  new.tree <- drop.tip(new.tree, dividing.cell, trim.internal = T, collapse.singles = F)
+  new.tree <- ape::drop.tip(new.tree, dividing.cell, trim.internal = T, collapse.singles = F)
   
   new.tree$tip.label <- sort(setdiff(new.tree$edge[,2], new.tree$edge[,1]))
   
@@ -193,7 +193,7 @@
   new.tree$tip.class <- new.tree$tip.class[-which(new.tree$tip.label %in% dying.cell)]
   new.tree$clone.id <- new.tree$clone.id[-which(new.tree$tip.label %in% dying.cell)]
   
-  new.tree <- drop.tip(new.tree, dying.cell, trim.internal = T, collapse.singles = F)
+  new.tree <- ape::drop.tip(new.tree, dying.cell, trim.internal = T, collapse.singles = F)
   
   new.tree$tip.label <- sort(setdiff(new.tree$edge[,2], new.tree$edge[,1]))
   tree <- new.tree
